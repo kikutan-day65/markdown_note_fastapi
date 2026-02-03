@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.db.models.like import Like
 from app.db.models.user import User
 
 
@@ -29,7 +30,13 @@ class Article(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
+
+    # Relationships (ORM)
     user: Mapped["User"] = relationship("User", back_populates="articles")
+    likes: Mapped[list["Like"]] = relationship(
+        "Like", back_populates="article", cascade="all"
+    )
