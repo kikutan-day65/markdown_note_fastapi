@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.models.article import Article
+from app.db.models.like import Like
 
 
 class User(Base):
@@ -37,4 +38,8 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Relationships (ORM)
     articles: Mapped[list["Article"]] = relationship("Article", back_populates="user")
+    likes: Mapped[list["Like"]] = relationship(
+        "Like", back_populates="user", cascade="all"
+    )
