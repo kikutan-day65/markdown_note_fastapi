@@ -1,18 +1,21 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.models.article import Article
-from app.db.models.user import User
+
+if TYPE_CHECKING:
+    from app.db.models.article import Article
+    from app.db.models.user import User
 
 
 class Like(Base):
     __tablename__ = "likes"
-    __table_args__ = UniqueConstraint(
-        "user_id", "article_id", name="uq_likes_user_id_article_id"
+    __table_args__ = (
+        UniqueConstraint("user_id", "article_id", name="uq_likes_user_id_article_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
