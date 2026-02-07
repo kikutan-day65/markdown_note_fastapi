@@ -1,12 +1,18 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.models.article import Article
-from app.db.models.like import Like
+
+if TYPE_CHECKING:
+    from app.db.models.article import Article
+    from app.db.models.comment import Comment
+    from app.db.models.follow import Follow
+    from app.db.models.like import Like
+    from app.db.models.notification import Notification
 
 
 class User(Base):
@@ -42,4 +48,17 @@ class User(Base):
     articles: Mapped[list["Article"]] = relationship("Article", back_populates="user")
     likes: Mapped[list["Like"]] = relationship(
         "Like", back_populates="user", cascade="all"
+    )
+    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        foreign_keys="Notification.receiver_id",
+        back_populates="receiver",
+        cascade="all",
+    )
+    followings: Mapped[list["Follow"]] = relationship(
+        "Follow", foreign_keys="Follow.actor_id", back_populates="actor"
+    )
+    followers: Mapped[list["Follow"]] = relationship(
+        "Follow", foreign_keys="Follow.target_id", back_populates="target"
     )
