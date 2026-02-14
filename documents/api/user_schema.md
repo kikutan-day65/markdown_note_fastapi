@@ -8,7 +8,8 @@ Create a new user.
 {
     "username": "username",
     "email": "email@example.com",
-    "password": "password"
+    "password": "password",
+    "avatar_url": "xxx-xxx-xxx"
 }
 ```
 
@@ -18,7 +19,7 @@ Create a new user.
 {
     "id": "uuid",
     "username": "username",
-    "email": "email@example.com",
+    "avatar_url": "xxx-xxx-xxx",
     "created_at": "YYYY-MM-DDTHH:MM:SSZ",
     "updated_at": "YYYY-MM-DDTHH:MM:SSZ"
 }
@@ -127,6 +128,7 @@ Patch current user. Only for current user.
 {
     "id": "uuid",
     "username": "username",
+    "email": "email@example.com",
     "avatar_url": "xxx-xxx-xxx",
     "created_at": "YYYY-MM-DDTHH:MM:SSZ",
     "updated_at": "YYYY-MM-DDTHH:MM:SSZ"
@@ -146,6 +148,19 @@ Change current user's email address. Only for current user.
 ```json
 {
     "email": "new_email@example.com"
+}
+```
+
+**Output**
+
+```json
+{
+    "id": "uuid",
+    "username": "username",
+    "email": "email@example.com",
+    "avatar_url": "xxx-xxx-xxx",
+    "created_at": "YYYY-MM-DDTHH:MM:SSZ",
+    "updated_at": "YYYY-MM-DDTHH:MM:SSZ"
 }
 ```
 
