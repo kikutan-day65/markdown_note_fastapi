@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
 
+from app.schemas.base import ORMBase
+
 
 # ===== REQUEST =====
 class UserCreate(BaseModel):
@@ -27,7 +29,7 @@ class UserChangePassword(BaseModel):
 
 
 # ===== RESPONSE =====
-class UserPublic(BaseModel):
+class UserPublic(ORMBase):
     id: uuid.UUID
     username: str
     avatar_url: str | None
@@ -35,7 +37,7 @@ class UserPublic(BaseModel):
     updated_at: datetime
 
 
-class UserAdmin(BaseModel):
+class UserAdmin(ORMBase):
     id: uuid.UUID
     username: str
     email: EmailStr
@@ -47,7 +49,7 @@ class UserAdmin(BaseModel):
     updated_at: datetime
 
 
-class UserMe(BaseModel):
+class UserMe(ORMBase):
     id: uuid.UUID
     username: str
     email: EmailStr
