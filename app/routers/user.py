@@ -1,41 +1,48 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.core.security import get_password_hash
 from app.db.models.user import User
+from app.repositories.user import UserRepository
 from app.schemas.user import UserAdmin, UserCreate, UserPublic
+from app.services.user import UserService
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/users", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = User(
-        username=user.username,
-        email=user.email,
-        password_hash=get_password_hash(user.password),
-        avatar_url=user.avatar_url,
-    )
+@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
+    repository = UserRepository(db)
+    service = UserService(repository)
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    new_user = service.create_user(user)
 
     return new_user
 
 
-@router.get("/users", response_model=list[UserAdmin])
-def list_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
+@router.get("", response_model=list[UserAdmin])
+def list_users(db: Session = Depends(get_db)) -> list[User]:
+    repository = UserRepository(db)
+    service = UserService(repository)
+
+    users = service.list_users()
 
     return users
 
 
-@router.get("/user/{id}", response_model=UserPublic)
-def get_user(id: uuid.UUID, db: Session = Depends(get_db)):
-    user = db.get(User, id)
+@router.get("/{id}", response_model=UserPublic)
+def get_user(id: uuid.UUID, db: Session = Depends(get_db)) -> User:
+    repository = UserRepository(db)
+    service = UserService(repository)
+
+    user = service.retrieve_user(id)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
 
     return user
