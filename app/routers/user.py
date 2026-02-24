@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.db.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.user import UserAdmin, UserCreate, UserPublic
+from app.schemas.user import UserAdmin, UserCreate, UserPublic, UserUpdate
 from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -46,3 +46,19 @@ def get_user(id: uuid.UUID, db: Session = Depends(get_db)) -> User:
         )
 
     return user
+
+
+@router.patch("/{id}", response_model=UserAdmin)
+def update_user(id: uuid.UUID, user: UserUpdate, db: Session = Depends(get_db)):
+    repository = UserRepository(db)
+    service = UserService(repository)
+
+    updated_user = service.update_user(id, user)
+
+    if updated_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    return updated_user
