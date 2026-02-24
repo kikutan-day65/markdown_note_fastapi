@@ -3,7 +3,7 @@ import uuid
 from app.core.security import get_password_hash
 from app.db.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 
 
 class UserService:
@@ -31,3 +31,18 @@ class UserService:
         user = self.repository.get_by_id(user_id)
 
         return user
+
+    def update_user(self, user_id: uuid.UUID, user: UserUpdate) -> User | None:
+        target = self.repository.get_by_id(user_id)
+
+        if not target:
+            return None
+
+        update_data = user.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            setattr(target, field, value)
+
+        updated_user = self.repository.save(target)
+
+        return updated_user
