@@ -20,4 +20,11 @@ class UserRepository:
         return self.db.query(User).all()
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        return self.db.get(User, user_id)
+        return (
+            self.db.query(User)
+            .filter(
+                User.id == user_id,
+                User.deleted_at.is_(None),
+            )
+            .first()
+        )
