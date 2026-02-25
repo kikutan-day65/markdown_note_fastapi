@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from app.core.security import get_password_hash
 from app.db.models.user import User
@@ -46,3 +47,17 @@ class UserService:
         updated_user = self.repository.save(target)
 
         return updated_user
+
+    def delete_user(self, user_id: uuid.UUID) -> User | None:
+        target = self.repository.get_by_id(user_id)
+
+        if not target:
+            return None
+
+        if target.deleted_at is not None:
+            return target
+
+        target.deleted_at = datetime.now(tz=timezone.utc)
+        deleted_user = self.repository.save(target)
+
+        return deleted_user
