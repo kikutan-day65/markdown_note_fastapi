@@ -62,3 +62,19 @@ def update_user(id: uuid.UUID, user: UserUpdate, db: Session = Depends(get_db)):
         )
 
     return updated_user
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    repository = UserRepository(db)
+    service = UserService(repository)
+
+    deleted_user = service.delete_user(id)
+
+    if deleted_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    return None
