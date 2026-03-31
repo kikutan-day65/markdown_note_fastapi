@@ -1,4 +1,19 @@
+import uuid
+from typing import Annotated
+
+import jwt
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+from jwt.exceptions import InvalidTokenError
+from sqlalchemy.orm import Session
+
+from app.core.exceptions import CredentialException, InactiveUserException
+from app.core.settings import settings
+from app.db.models import User
 from app.db.session import SessionLocal
+from app.repositories.auth import AuthRepository
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_db():
@@ -7,3 +22,39 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# なんか422が返ってきてしまう、、、、、
+def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
+):
+    if not token:
+        raise CredentialException()
+
+    repository = AuthRepository(db)
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        user_id = payload.get("sub")
+
+        if not user_id:
+            raise CredentialException()
+
+        user_id = uuid.UUID(user_id)
+
+    except InvalidTokenError:
+        raise CredentialException()
+
+    user = repository.get_user_by_id(user_id)
+
+    if not user:
+        raise CredentialException()
+
+    return user
+
+
+def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
+    if not current_user.is_active:
+        raise InactiveUserException()
+    return current_user

@@ -1,12 +1,13 @@
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_active_user, get_current_user, get_db
 from app.db.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.user import UserAdmin, UserCreate, UserPublic, UserUpdate
+from app.schemas.user import UserAdmin, UserCreate, UserMe, UserPublic, UserUpdate
 from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -78,3 +79,8 @@ def delete_user(id: uuid.UUID, db: Session = Depends(get_db)) -> None:
         )
 
     return None
+
+
+@router.get("/me", response_model=UserMe, status_code=status.HTTP_200_OK)
+def read_me(current_user: Annotated[User, Depends(get_current_active_user)]) -> User:
+    return current_user
