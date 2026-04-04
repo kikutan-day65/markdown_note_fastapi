@@ -7,13 +7,17 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import CredentialException, InactiveUserException
+from app.core.exceptions import (
+    CredentialException,
+    InactiveUserException,
+    PermissionDeniedException,
+)
 from app.core.settings import settings
 from app.db.models import User
 from app.db.session import SessionLocal
 from app.repositories.auth import AuthRepository
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 def get_db():
@@ -24,7 +28,6 @@ def get_db():
         db.close()
 
 
-# なんか422が返ってきてしまう、、、、、
 def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
 ):
