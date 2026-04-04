@@ -1,10 +1,13 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.exceptions import AuthenticationException
 from app.repositories.auth import AuthRepository
-from app.schemas.auth import LoginRequest, Token
+from app.schemas.auth import Token
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -12,13 +15,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/token")
 def login_for_access_token(
-    login_request: LoginRequest,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
 ) -> Token:
     repository = AuthRepository(db)
     service = AuthService(repository)
 
-    user = service.authenticate_user(login_request.identifier, login_request.password)
+    identifier = form_data.username  # put username/email to identifier
+    user = service.authenticate_user(identifier, form_data.password)
 
     if not user:
         raise AuthenticationException()
