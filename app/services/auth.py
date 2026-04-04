@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from core.settings import settings
 
 from app.core.security import DUMMY_HASH, verify_password
+from app.core.settings import settings
 from app.db.models.user import User
 from app.repositories.auth import AuthRepository
 
