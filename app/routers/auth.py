@@ -35,8 +35,10 @@ def login_for_access_token(
         raise AuthenticationException()
 
     data = {"sub": str(user.id)}
-    access_token = service.create_token(data=data, token_kind="access")
-    refresh_token = service.create_token(data=data, token_kind="refresh")
+    access_token, _ = service.create_token(data=data, token_kind="access")
+    refresh_token, expire = service.create_token(data=data, token_kind="refresh")
+
+    service.save_refresh_token(user_id=user.id, token=refresh_token, expire=expire)
 
     return Token(
         access_token=access_token, refresh_token=refresh_token, token_type="bearer"
