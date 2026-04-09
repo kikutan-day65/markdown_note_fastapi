@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.db.models.follow import Follow
     from app.db.models.like import Like
     from app.db.models.notification import Notification
+    from app.db.models.refresh_token import RefreshToken
 
 
 class User(Base):
@@ -61,4 +62,9 @@ class User(Base):
     )
     followers: Mapped[list["Follow"]] = relationship(
         "Follow", foreign_keys="Follow.target_id", back_populates="target"
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all",
     )
