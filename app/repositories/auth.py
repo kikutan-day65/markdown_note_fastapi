@@ -1,6 +1,9 @@
+import uuid
+
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 
 
@@ -25,3 +28,16 @@ class AuthRepository:
         )
 
         return self.db.scalar(stmt)
+
+    def save_refresh_token(self, token: RefreshToken) -> None:
+        self.db.add(token)
+        self.db.commit()
+        self.db.refresh(token)
+
+    def get_refresh_tokens(self, user_id: uuid.UUID) -> list[RefreshToken]:
+        stmt = select(RefreshToken).where(
+            RefreshToken.user_id == user_id,
+            RefreshToken.revoked_at.is_(None),
+        )
+
+        return self.db.scalars(stmt).all()
