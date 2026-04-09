@@ -29,7 +29,7 @@ class AuthService:
 
     def create_token(
         self, data: dict, token_kind: str, expires_delta: timedelta | None = None
-    ) -> str:
+    ) -> tuple[str, datetime]:
 
         to_encode = data.copy()
 
