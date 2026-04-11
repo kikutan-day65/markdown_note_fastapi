@@ -115,11 +115,13 @@ class AuthService:
 
     def create_token(
         self, data: dict, token_kind: str, expires_delta: timedelta | None = None
-    ) -> tuple[str, datetime]:
+    ) -> tuple[str, datetime, uuid.UUID | None]:
 
         to_encode = data.copy()
 
         now = datetime.now(timezone.utc)
+        jti = None
+
         if token_kind == "access":
             expires_delta = expires_delta or timedelta(
                 minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -130,6 +132,7 @@ class AuthService:
                 days=settings.REFRESH_TOKEN_EXPIRE_DAYS
             )
             expire = now + expires_delta
+            jti = uuid.uuid4()
         else:
             raise ValueError("Invalid token kind")
 
@@ -140,6 +143,10 @@ class AuthService:
                 "iat": now,  # token issued time
             }
         )
+
+        if jti:
+            to_encode["jti"] = str(jti)  # token unique id
+
         encoded_jwt = jwt.encode(
             to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
         )
@@ -171,33 +178,18 @@ class AuthService:
         return user_id, jti
 
     def save_refresh_token(
-        self, user_id: uuid.UUID, token: str, expire: datetime
+        self, user_id: uuid.UUID, token: str, expire: datetime, jti: uuid.UUID
     ) -> None:
         data = RefreshToken(
-            user_id=user_id, token=get_password_hash(token), expires_at=expire
+            user_id=user_id,
+            token=get_password_hash(token),
+            expires_at=expire,
+            jti=jti,
         )
         self.repository.save_refresh_token(data)
 
-    def revoke_refresh_token(self, user_id: uuid.UUID, token: str) -> None:
-        refresh_tokens = self.repository.get_refresh_tokens(user_id=user_id)
-
-        if not refresh_tokens:
-            raise CredentialException()
-
-        target = None
-
-        for rt in refresh_tokens:
-            if verify_password(token, rt.token):
-                target = rt
-                break
-
-        if not target:
-            raise CredentialException()
-
+    def revoke_refresh_token(self, target: RefreshToken) -> None:
         now = datetime.now(tz=timezone.utc)
-        if target.expires_at < now:
-            raise CredentialException()
-
         target.revoked_at = now
 
         # Update old refresh token -> revoked_at is set
