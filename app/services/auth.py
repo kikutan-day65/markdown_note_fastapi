@@ -117,7 +117,31 @@ class AuthService:
             to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
         )
 
-        return encoded_jwt, expire
+        return encoded_jwt, expire, jti
+
+    def decode_refresh_token(self, token: str) -> tuple[uuid.UUID, uuid.UUID]:
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
+
+            if payload.get("type") != "refresh":
+                raise CredentialException()
+
+            user_id = payload.get("sub")
+            if not user_id:
+                raise CredentialException()
+            user_id = uuid.UUID(user_id)
+
+            jti = payload.get("jti")
+            if not jti:
+                raise CredentialException()
+            jti = uuid.UUID(jti)
+
+        except (InvalidTokenError, ValueError):
+            raise CredentialException()
+
+        return user_id, jti
 
     def save_refresh_token(
         self, user_id: uuid.UUID, token: str, expire: datetime
