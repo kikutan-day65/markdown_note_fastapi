@@ -34,10 +34,7 @@ class AuthRepository:
         self.db.commit()
         self.db.refresh(token)
 
-    def get_refresh_tokens(self, user_id: uuid.UUID) -> list[RefreshToken]:
-        stmt = select(RefreshToken).where(
-            RefreshToken.user_id == user_id,
-            RefreshToken.revoked_at.is_(None),
-        )
+    def get_refresh_token_by_jti(self, jti: uuid.UUID) -> RefreshToken | None:
+        stmt = select(RefreshToken).where(RefreshToken.jti == jti)
 
-        return self.db.scalars(stmt).all()
+        return self.db.scalar(stmt)
