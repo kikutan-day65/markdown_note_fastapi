@@ -16,24 +16,18 @@ class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
 
-    def refresh(self, token: str) -> Token:
-        try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-            )
+    def logout(self, token: str):
+        user_id, jti = self.decode_refresh_token(token=token)
 
-            if payload.get("type") != "refresh":
-                raise CredentialException()
+        user = self.repository.get_user_by_id(user_id)
+        if not user:
+            raise CredentialException()
 
-            user_id = payload.get("sub")
-            if not user_id:
-                raise CredentialException()
-            user_id = uuid.UUID(user_id)
+        target = self.repository.get_refresh_token_by_jti(jti=jti)
+        if not target:
+            raise CredentialException()
 
-            jti = payload.get("jti")
-            if not jti:
-                raise CredentialException()
-            jti = uuid.UUID(jti)
+        self.revoke_refresh_token(target=target)
 
         except (InvalidTokenError, ValueError):
             raise CredentialException()
