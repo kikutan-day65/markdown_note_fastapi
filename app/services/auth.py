@@ -29,8 +29,8 @@ class AuthService:
 
         self.revoke_refresh_token(target=target)
 
-        except (InvalidTokenError, ValueError):
-            raise CredentialException()
+    def refresh(self, token: str) -> Token:
+        user_id, jti = self.decode_refresh_token(token=token)
 
         user = self.repository.get_user_by_id(user_id)
         if not user:
@@ -51,7 +51,6 @@ class AuthService:
             data=data, token_kind="refresh"
         )
 
-        # Save new refresh token
         self.save_refresh_token(
             user_id=user.id,
             token=new_refresh_token,
