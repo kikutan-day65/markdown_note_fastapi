@@ -46,9 +46,15 @@ def login_for_access_token(
 
 
 @router.post("/refresh")
-def refresh_for_access_token(
-    refresh_token: str, db: Session = Depends(get_db)
-) -> Token:
+def refresh(refresh_token: str, db: Session = Depends(get_db)) -> Token:
+    repository = AuthRepository(db)
+    service = AuthService(repository)
+
+    return service.refresh(token=refresh_token)
+
+
+@router.post("/logout")
+def logout(refresh_token: str, db: Session = Depends(get_db)):
     repository = AuthRepository(db)
     service = AuthService(repository)
 

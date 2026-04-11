@@ -9,11 +9,67 @@ from app.core.settings import settings
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.repositories.auth import AuthRepository
+from app.schemas.auth import Token
 
 
 class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
+
+    def refresh(self, token: str) -> Token:
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
+
+            if payload.get("type") != "refresh":
+                raise CredentialException()
+
+            user_id = payload.get("sub")
+            if not user_id:
+                raise CredentialException()
+            user_id = uuid.UUID(user_id)
+
+            jti = payload.get("jti")
+            if not jti:
+                raise CredentialException()
+            jti = uuid.UUID(jti)
+
+        except (InvalidTokenError, ValueError):
+            raise CredentialException()
+
+        user = self.repository.get_user_by_id(user_id)
+        if not user:
+            raise CredentialException()
+
+        target = self.repository.get_refresh_token_by_jti(jti=jti)
+        if not target:
+            raise CredentialException()
+
+        if target.revoked_at is not None:
+            raise TokenReuseException()
+
+        self.revoke_refresh_token(target=target)
+
+        data = {"sub": str(user.id)}
+        new_access_token, _, _ = self.create_token(data=data, token_kind="access")
+        new_refresh_token, expire, jti = self.create_token(
+            data=data, token_kind="refresh"
+        )
+
+        # Save new refresh token
+        self.save_refresh_token(
+            user_id=user.id,
+            token=new_refresh_token,
+            expire=expire,
+            jti=jti,
+        )
+
+        return Token(
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
+            token_type="bearer",
+        )
 
     def authenticate_user(self, identifier: str, password: str) -> User | None:
         if not identifier or not password:
