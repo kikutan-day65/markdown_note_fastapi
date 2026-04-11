@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
 
 import jwt
-from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
 
@@ -24,10 +22,7 @@ class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
 
-    def login(
-        self,
-        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    ):
+    def login(self, form_data: OAuth2PasswordRequestForm):
         identifier = form_data.username  # put username/email to identifier
 
         user = self.authenticate_user(identifier, form_data.password)
@@ -61,6 +56,9 @@ class AuthService:
         if not target:
             raise CredentialException()
 
+        if not verify_password(token, target.token):
+            raise CredentialException()
+
         self.revoke_refresh_token(target=target)
 
     def refresh(self, token: str) -> Token:
@@ -72,6 +70,9 @@ class AuthService:
 
         target = self.repository.get_refresh_token_by_jti(jti=jti)
         if not target:
+            raise CredentialException()
+
+        if not verify_password(token, target.token):
             raise CredentialException()
 
         if target.revoked_at is not None:
