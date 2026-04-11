@@ -1,9 +1,17 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 import jwt
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from jwt.exceptions import InvalidTokenError
 
-from app.core.exceptions import CredentialException
+from app.core.exceptions import (
+    AuthenticationException,
+    CredentialException,
+    TokenReuseException,
+)
 from app.core.security import DUMMY_HASH, get_password_hash, verify_password
 from app.core.settings import settings
 from app.db.models.refresh_token import RefreshToken
@@ -15,6 +23,32 @@ from app.schemas.auth import Token
 class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
+
+    def login(
+        self,
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    ):
+        identifier = form_data.username  # put username/email to identifier
+
+        user = self.authenticate_user(identifier, form_data.password)
+
+        if not user:
+            raise AuthenticationException()
+
+        data = {"sub": str(user.id)}
+        access_token, _, _ = self.create_token(data=data, token_kind="access")
+        refresh_token, expire, jti = self.create_token(data=data, token_kind="refresh")
+
+        self.save_refresh_token(
+            user_id=user.id,
+            token=refresh_token,
+            expire=expire,
+            jti=jti,
+        )
+
+        return Token(
+            access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+        )
 
     def logout(self, token: str):
         user_id, jti = self.decode_refresh_token(token=token)
