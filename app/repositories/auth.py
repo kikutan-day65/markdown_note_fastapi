@@ -21,7 +21,7 @@ class AuthRepository:
         )
         return self.db.scalar(stmt)
 
-    def get_user_by_id(self, user_id) -> User | None:
+    def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
         stmt = select(User).where(
             User.id == user_id,
             User.deleted_at.is_(None),
