@@ -17,7 +17,10 @@ class RefreshToken(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    token: Mapped[str] = mapped_column(unique=True, nullable=False)
+    jti: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False
+    )
+    token: Mapped[str] = mapped_column(nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
