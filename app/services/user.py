@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
+from app.core.exceptions import PermissionDeniedException, UserNotFoundException
 from app.core.security import get_password_hash
 from app.db.models.user import User
 from app.repositories.user import UserRepository
@@ -11,12 +12,12 @@ class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
 
-    def create_user(self, user: UserCreate) -> User:
+    def create_user(self, user_data: UserCreate) -> User:
         user_in = User(
-            username=user.username,
-            email=user.email,
-            password_hash=get_password_hash(user.password),
-            avatar_url=user.avatar_url,
+            username=user_data.username,
+            email=user_data.email,
+            password_hash=get_password_hash(user_data.password),
+            avatar_url=user_data.avatar_url,
         )
 
         new_user = self.repository.save(user_in)
@@ -28,18 +29,26 @@ class UserService:
 
         return users
 
-    def retrieve_user(self, user_id: uuid.UUID) -> User | None:
-        user = self.repository.get_by_id(user_id)
-
-        return user
-
-    def update_user(self, user_id: uuid.UUID, user: UserUpdate) -> User | None:
+    def retrieve_user(self, user_id: uuid.UUID) -> User:
         target = self.repository.get_by_id(user_id)
 
         if not target:
-            return None
+            raise UserNotFoundException()
 
-        update_data = user.model_dump(exclude_unset=True)
+        return target
+
+    def update_user(
+        self, user_id: uuid.UUID, user_data: UserUpdate, current_user: User
+    ) -> User:
+        target = self.repository.get_by_id(user_id)
+
+        if not target:
+            raise UserNotFoundException()
+
+        if not current_user.is_admin and current_user.id != target.id:
+            raise PermissionDeniedException()
+
+        update_data = user_data.model_dump(exclude_unset=True)
 
         for field, value in update_data.items():
             setattr(target, field, value)
@@ -48,16 +57,18 @@ class UserService:
 
         return updated_user
 
-    def delete_user(self, user_id: uuid.UUID) -> User | None:
+    def delete_user(self, user_id: uuid.UUID, current_user: User) -> None:
         target = self.repository.get_by_id(user_id)
 
         if not target:
-            return None
+            raise UserNotFoundException()
 
+        if not current_user.is_admin and current_user.id != target.id:
+            raise PermissionDeniedException()
+
+        # Has target been already deleted?
         if target.deleted_at is not None:
-            return target
+            return
 
         target.deleted_at = datetime.now(tz=timezone.utc)
-        deleted_user = self.repository.save(target)
-
-        return deleted_user
+        self.repository.save(target)
