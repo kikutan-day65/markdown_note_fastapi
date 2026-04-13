@@ -9,7 +9,7 @@ from app.repositories.auth import AuthRepository
 from app.schemas.auth import Token
 from app.services.auth import AuthService
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 
 @router.post("/login")
