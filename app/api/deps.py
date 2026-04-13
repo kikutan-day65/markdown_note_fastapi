@@ -17,7 +17,7 @@ from app.db.models import User
 from app.db.session import SessionLocal
 from app.repositories.auth import AuthRepository
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def get_db():
