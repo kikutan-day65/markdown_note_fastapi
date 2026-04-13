@@ -39,8 +39,11 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        user_id = payload.get("sub")
 
+        if payload.get("type") != "access":
+            raise CredentialException()
+
+        user_id = payload.get("sub")
         if not user_id:
             raise CredentialException()
 
