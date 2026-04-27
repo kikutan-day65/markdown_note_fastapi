@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 import pytest
 
+from app.core.exceptions import AuthenticationException
 from app.core.security import DUMMY_HASH
 from app.core.settings import settings
 from app.db.models.user import User
@@ -126,3 +127,51 @@ def test_create_token_with_invalid_token_kind(auth_service):
 
     with pytest.raises(ValueError, match="Invalid token kind"):
         auth_service.create_token(data=data, token_kind="invalid_kind")
+
+
+def test_login_success(mocker, auth_service, dummy_form_data):
+    mock_user = User(id=uuid.uuid4())
+    auth_service.authenticate_user = mocker.Mock(return_value=mock_user)
+
+    auth_service.create_token = mocker.Mock(
+        side_effect=[
+            ("access_token", None, None),
+            ("refresh_token", "dummy_expire", "dummy_jti"),
+        ]
+    )
+
+    auth_service.save_refresh_token = mocker.Mock(return_value=None)
+
+    token = auth_service.login(form_data=dummy_form_data)
+
+    auth_service.authenticate_user.assert_called_once_with(
+        dummy_form_data.username, dummy_form_data.password
+    )
+    assert auth_service.create_token.call_count == 2
+    auth_service.create_token.assert_any_call(
+        data={"sub": str(mock_user.id)}, token_kind="access"
+    )
+    auth_service.create_token.assert_any_call(
+        data={"sub": str(mock_user.id)}, token_kind="refresh"
+    )
+    auth_service.save_refresh_token.assert_called_once_with(
+        user_id=mock_user.id,
+        token="refresh_token",
+        expire="dummy_expire",
+        jti="dummy_jti",
+    )
+    assert token.access_token == "access_token"
+    assert token.refresh_token == "refresh_token"
+    assert token.token_type == "bearer"
+
+
+def test_login_failure(mocker, auth_service, dummy_form_data):
+    auth_service.authenticate_user = mocker.Mock(return_value=None)
+    auth_service.create_token = mocker.Mock()
+    auth_service.save_refresh_token = mocker.Mock()
+
+    with pytest.raises(AuthenticationException):
+        auth_service.login(form_data=dummy_form_data)
+
+    auth_service.create_token.assert_not_called()
+    auth_service.save_refresh_token.assert_not_called()
