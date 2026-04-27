@@ -42,3 +42,20 @@
 - [x] Raise `AuthenticationException`
   - [x] `create_token()` is not called
   - [x] `save_refresh_token()` is not called
+
+## logout
+
+- [x] Calls `decode_refresh_token()`
+- [x] Calls `get_user_by_id()`
+- [x] Calls `get_refresh_token_by_jti()`
+- [x] Calls `verify_password()`
+- [x] Calls `revoke_refresh_token()`
+- [x] Raises `CredentialException` when User object is not retrieved
+  - [x] `get_refresh_token_by_jti()` is not called
+  - [x] `verify_password()` is not called
+  - [x] `revoke_refresh_token()` is not called
+- [x] Raises `CredentialException` when RefreshToken object is not retrieved
+  - [x] `verify_password()` is not called
+  - [x] `revoke_refresh_token()` is not called
+- [x] Raises `CredentialException` when password validation fails
+  - [x] `revoke_refresh_token()` is not called
