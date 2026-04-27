@@ -27,3 +27,18 @@
 
 - [x] Returns `expire` when `expires_delta` is passed as argument
 - [x] Raise `ValueError` when token kind is invalid
+
+## login
+
+- [x] Calls `authenticate_user()` with correct identifier and password
+- [x] Calls `create_token()` twice
+  - [x] Once with token kind `access`
+  - [x] Once with token kind `refresh`
+- [x] Calls `save_refresh_token()` with correct arguments
+- [x] Returns valid `Token`
+  - [x] access token in `Token` matches the returned value of `access_token`
+  - [x] refresh token in `Token` matches the returned value of `refresh_token`
+  - [x] type in `Token` matches `bearer`
+- [x] Raise `AuthenticationException`
+  - [x] `create_token()` is not called
+  - [x] `save_refresh_token()` is not called
