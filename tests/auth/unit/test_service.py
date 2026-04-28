@@ -5,7 +5,11 @@ from unittest.mock import Mock
 import jwt
 import pytest
 
-from app.core.exceptions import AuthenticationException, CredentialException
+from app.core.exceptions import (
+    AuthenticationException,
+    CredentialException,
+    TokenReuseException,
+)
 from app.core.security import DUMMY_HASH
 from app.core.settings import settings
 from app.db.models.refresh_token import RefreshToken
@@ -288,4 +292,203 @@ def test_logout_fails_when_password_verification_fails(
     with pytest.raises(CredentialException):
         auth_service.logout(token=input_token)
 
-    auth_service.revoke_refresh_token.assert_not_called()
+    mock_revoke_refresh_token.assert_not_called()
+
+
+def test_refresh_success(mocker, auth_service, mock_auth_repository):
+    input_token = "dummy_token"
+
+    mock_user_id = uuid.uuid4()
+    mock_jti = uuid.uuid4()
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
+
+    mock_user = User(id=mock_user_id)
+    mock_auth_repository.get_user_by_id.return_value = mock_user
+
+    mock_refresh_token = RefreshToken(
+        token="hashed_input_token", jti=mock_jti, revoked_at=None
+    )
+    mock_auth_repository.get_refresh_token_by_jti.return_value = mock_refresh_token
+
+    mock_verify_password = mocker.patch(
+        "app.services.auth.verify_password", return_value=True
+    )
+
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
+
+    mock_create_token = Mock(
+        side_effect=[
+            ("new_access_token", None, None),
+            ("new_refresh_token", "dummy_expire", "dummy_jti"),
+        ]
+    )
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
+
+    token = auth_service.refresh(token=input_token)
+
+    mock_decode_refresh_token.assert_called_once_with(token=input_token)
+    mock_auth_repository.get_user_by_id.assert_called_once_with(mock_user_id)
+    mock_auth_repository.get_refresh_token_by_jti.assert_called_once_with(jti=mock_jti)
+    mock_verify_password.assert_called_once_with(input_token, mock_refresh_token.token)
+    mock_revoke_refresh_token.assert_called_once_with(target=mock_refresh_token)
+    assert mock_create_token.call_count == 2
+    mock_create_token.assert_any_call(
+        data={"sub": str(mock_user.id)}, token_kind="access"
+    )
+    mock_create_token.assert_any_call(
+        data={"sub": str(mock_user.id)}, token_kind="refresh"
+    )
+    mock_save_refresh_token.assert_called_once_with(
+        user_id=mock_user_id,
+        token="new_refresh_token",
+        expire="dummy_expire",
+        jti="dummy_jti",
+    )
+    assert token.access_token == "new_access_token"
+    assert token.refresh_token == "new_refresh_token"
+    assert token.token_type == "bearer"
+
+
+def test_refresh_fails_when_user_not_found(mocker, auth_service, mock_auth_repository):
+    input_token = "dummy_token"
+
+    mock_user_id = uuid.uuid4()
+    mock_jti = uuid.uuid4()
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
+
+    mock_auth_repository.get_user_by_id.return_value = None
+
+    mock_verify_password = mocker.patch("app.services.auth.verify_password")
+
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
+
+    mock_create_token = Mock()
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
+
+    with pytest.raises(CredentialException):
+        auth_service.refresh(token=input_token)
+
+    mock_auth_repository.get_refresh_token_by_jti.assert_not_called()
+    mock_verify_password.assert_not_called()
+    mock_revoke_refresh_token.assert_not_called()
+    mock_create_token.assert_not_called()
+    mock_save_refresh_token.assert_not_called()
+
+
+def test_refresh_fails_when_refresh_token_not_found(
+    mocker, auth_service, mock_auth_repository
+):
+    input_token = "dummy_token"
+
+    mock_user_id = uuid.uuid4()
+    mock_jti = uuid.uuid4()
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
+
+    mock_user = User(id=mock_user_id)
+    mock_auth_repository.get_user_by_id.return_value = mock_user
+
+    mock_auth_repository.get_refresh_token_by_jti.return_value = None
+
+    mock_verify_password = mocker.patch("app.services.auth.verify_password")
+
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
+
+    mock_create_token = Mock()
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
+
+    with pytest.raises(CredentialException):
+        auth_service.refresh(token=input_token)
+
+    mock_verify_password.assert_not_called()
+    mock_revoke_refresh_token.assert_not_called()
+    mock_create_token.assert_not_called()
+    mock_save_refresh_token.assert_not_called()
+
+
+def test_refresh_fails_when_password_validation_fails(
+    mocker, auth_service, mock_auth_repository
+):
+    input_token = "dummy_token"
+
+    mock_user_id = uuid.uuid4()
+    mock_jti = uuid.uuid4()
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
+
+    mock_user = User(id=mock_user_id)
+    mock_auth_repository.get_user_by_id.return_value = mock_user
+
+    mock_refresh_token = RefreshToken(
+        token="hashed_input_token", jti=mock_jti, revoked_at=None
+    )
+    mock_auth_repository.get_refresh_token_by_jti.return_value = mock_refresh_token
+
+    mocker.patch("app.services.auth.verify_password", return_value=False)
+
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
+
+    mock_create_token = Mock()
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
+
+    with pytest.raises(CredentialException):
+        auth_service.refresh(token=input_token)
+
+    mock_revoke_refresh_token.assert_not_called()
+    mock_create_token.assert_not_called()
+    mock_save_refresh_token.assert_not_called()
+
+
+def test_refresh_fails_when_target_has_already_been_revoked(
+    mocker, auth_service, mock_auth_repository
+):
+    input_token = "dummy_token"
+
+    mock_user_id = uuid.uuid4()
+    mock_jti = uuid.uuid4()
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
+
+    mock_user = User(id=mock_user_id)
+    mock_auth_repository.get_user_by_id.return_value = mock_user
+
+    mock_refresh_token = RefreshToken(
+        token="hashed_input_token", jti=mock_jti, revoked_at="dummy_revoked_at"
+    )
+    mock_auth_repository.get_refresh_token_by_jti.return_value = mock_refresh_token
+
+    mocker.patch("app.services.auth.verify_password", return_value=True)
+
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
+
+    mock_create_token = Mock()
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
+
+    with pytest.raises(TokenReuseException):
+        auth_service.refresh(token=input_token)
+
+    mock_revoke_refresh_token.assert_not_called()
+    mock_create_token.assert_not_called()
+    mock_save_refresh_token.assert_not_called()
