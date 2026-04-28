@@ -59,3 +59,38 @@
   - [x] `revoke_refresh_token()` is not called
 - [x] Raises `CredentialException` when password validation fails
   - [x] `revoke_refresh_token()` is not called
+
+## refresh
+
+- [x] Calls `decode_refresh_token()`
+- [x] Calls `get_user_by_id()`
+- [x] Calls `get_refresh_token_by_jti()`
+- [x] Calls `verify_password()`
+- [x] Calls `revoke_refresh_token()`
+- [x] Calls `create_token()` twice
+  - [x] Once with token kind `access`
+  - [x] Once with token kind `refresh`
+- [x] Calls `save_refresh_token()` with correct arguments
+- [x] Returns valid `Token`
+  - [x] access token in `Token` matches the returned value of `new_access_token`
+  - [x] refresh token in `Token` matches the returned value of `new_refresh_token`
+  - [x] type in `Token` matches `bearer`
+- [x] Raises `CredentialException` when User object is not retrieved
+  - [x] `get_refresh_token_by_jti()` is not called
+  - [x] `verify_password()` is not called
+  - [x] `revoke_refresh_token()` is not called
+  - [x] `create_token()` is not called
+  - [x] `save_refresh_token()` is not called
+- [x] Raises `CredentialException` when RefreshToken object is not retrieved
+  - [x] `verify_password()` is not called
+  - [x] `revoke_refresh_token()` iw not called
+  - [x] `create_token()` is not called
+  - [x] `save_refresh_token()` is not called
+- [x] Raises `CredentialException` when password validation fails
+  - [x] `revoke_refresh_token()` iw not called
+  - [x] `create_token()` is not called
+  - [x] `save_refresh_token()` is not called
+- [x] Raises `TokenReuseException` when the target RefreshToken has already been revoked
+  - [x] `revoke_refresh_token()` iw not called
+  - [x] `create_token()` is not called
+  - [x] `save_refresh_token()` is not called
