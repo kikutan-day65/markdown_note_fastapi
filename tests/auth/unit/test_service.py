@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock
 
 import jwt
 import pytest
@@ -132,30 +133,33 @@ def test_create_token_with_invalid_token_kind(auth_service):
 
 def test_login_success(mocker, auth_service, dummy_form_data):
     mock_user = User(id=uuid.uuid4())
-    auth_service.authenticate_user = mocker.Mock(return_value=mock_user)
+    mock_authenticate_user = Mock(return_value=mock_user)
+    auth_service.authenticate_user = mock_authenticate_user
 
-    auth_service.create_token = mocker.Mock(
+    mock_create_token = Mock(
         side_effect=[
             ("access_token", None, None),
             ("refresh_token", "dummy_expire", "dummy_jti"),
         ]
     )
+    auth_service.create_token = mock_create_token
 
-    auth_service.save_refresh_token = mocker.Mock(return_value=None)
+    mock_save_refresh_token = Mock(return_value=None)
+    auth_service.save_refresh_token = mock_save_refresh_token
 
     token = auth_service.login(form_data=dummy_form_data)
 
-    auth_service.authenticate_user.assert_called_once_with(
+    mock_authenticate_user.assert_called_once_with(
         dummy_form_data.username, dummy_form_data.password
     )
-    assert auth_service.create_token.call_count == 2
-    auth_service.create_token.assert_any_call(
+    assert mock_create_token.call_count == 2
+    mock_create_token.assert_any_call(
         data={"sub": str(mock_user.id)}, token_kind="access"
     )
-    auth_service.create_token.assert_any_call(
+    mock_create_token.assert_any_call(
         data={"sub": str(mock_user.id)}, token_kind="refresh"
     )
-    auth_service.save_refresh_token.assert_called_once_with(
+    mock_save_refresh_token.assert_called_once_with(
         user_id=mock_user.id,
         token="refresh_token",
         expire="dummy_expire",
@@ -167,15 +171,20 @@ def test_login_success(mocker, auth_service, dummy_form_data):
 
 
 def test_login_failure(mocker, auth_service, dummy_form_data):
-    auth_service.authenticate_user = mocker.Mock(return_value=None)
-    auth_service.create_token = mocker.Mock()
-    auth_service.save_refresh_token = mocker.Mock()
+    mock_authenticate_user = Mock(return_value=None)
+    auth_service.authenticate_user = mock_authenticate_user
+
+    mock_create_token = Mock()
+    auth_service.create_token = mock_create_token
+
+    mock_save_refresh_token = Mock()
+    auth_service.save_refresh_token = mock_save_refresh_token
 
     with pytest.raises(AuthenticationException):
         auth_service.login(form_data=dummy_form_data)
 
-    auth_service.create_token.assert_not_called()
-    auth_service.save_refresh_token.assert_not_called()
+    mock_create_token.assert_not_called()
+    mock_save_refresh_token.assert_not_called()
 
 
 def test_logout_success(mocker, auth_service, mock_auth_repository):
@@ -183,9 +192,8 @@ def test_logout_success(mocker, auth_service, mock_auth_repository):
 
     mock_user_id = uuid.uuid4()
     mock_jti = uuid.uuid4()
-    auth_service.decode_refresh_token = mocker.Mock(
-        return_value=(mock_user_id, mock_jti)
-    )
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
 
     mock_user = User(id=mock_user_id)
     mock_auth_repository.get_user_by_id.return_value = mock_user
@@ -197,15 +205,16 @@ def test_logout_success(mocker, auth_service, mock_auth_repository):
         "app.services.auth.verify_password", return_value=True
     )
 
-    auth_service.revoke_refresh_token = mocker.Mock()
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
 
     auth_service.logout(token=input_token)
 
-    auth_service.decode_refresh_token.assert_called_once_with(token=input_token)
+    mock_decode_refresh_token.assert_called_once_with(token=input_token)
     mock_auth_repository.get_user_by_id.assert_called_once_with(mock_user_id)
     mock_auth_repository.get_refresh_token_by_jti.assert_called_once_with(jti=mock_jti)
     mock_verify_password.assert_called_once_with(input_token, mock_refresh_token.token)
-    auth_service.revoke_refresh_token.assert_called_once_with(target=mock_refresh_token)
+    mock_revoke_refresh_token.assert_called_once_with(target=mock_refresh_token)
 
 
 def test_logout_fails_when_user_not_found(mocker, auth_service, mock_auth_repository):
@@ -213,22 +222,22 @@ def test_logout_fails_when_user_not_found(mocker, auth_service, mock_auth_reposi
 
     mock_user_id = uuid.uuid4()
     mock_jti = uuid.uuid4()
-    auth_service.decode_refresh_token = mocker.Mock(
-        return_value=(mock_user_id, mock_jti)
-    )
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
 
     mock_auth_repository.get_user_by_id.return_value = None
 
     mock_verify_password = mocker.patch("app.services.auth.verify_password")
 
-    auth_service.revoke_refresh_token = mocker.Mock()
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
 
     with pytest.raises(CredentialException):
         auth_service.logout(token=input_token)
 
     mock_auth_repository.get_refresh_token_by_jti.assert_not_called()
     mock_verify_password.assert_not_called()
-    auth_service.revoke_refresh_token.assert_not_called()
+    mock_revoke_refresh_token.assert_not_called()
 
 
 def test_logout_fails_when_refresh_token_not_found(
@@ -238,22 +247,22 @@ def test_logout_fails_when_refresh_token_not_found(
 
     mock_user_id = uuid.uuid4()
     mock_jti = uuid.uuid4()
-    auth_service.decode_refresh_token = mocker.Mock(
-        return_value=(mock_user_id, mock_jti)
-    )
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
 
     mock_auth_repository.get_user_by_id.return_value = User(id=mock_user_id)
     mock_auth_repository.get_refresh_token_by_jti.return_value = None
 
     mock_verify_password = mocker.patch("app.services.auth.verify_password")
 
-    auth_service.revoke_refresh_token = mocker.Mock()
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
 
     with pytest.raises(CredentialException):
         auth_service.logout(token=input_token)
 
     mock_verify_password.assert_not_called()
-    auth_service.revoke_refresh_token.assert_not_called()
+    mock_revoke_refresh_token.assert_not_called()
 
 
 def test_logout_fails_when_password_verification_fails(
@@ -263,9 +272,8 @@ def test_logout_fails_when_password_verification_fails(
 
     mock_user_id = uuid.uuid4()
     mock_jti = uuid.uuid4()
-    auth_service.decode_refresh_token = mocker.Mock(
-        return_value=(mock_user_id, mock_jti)
-    )
+    mock_decode_refresh_token = Mock(return_value=(mock_user_id, mock_jti))
+    auth_service.decode_refresh_token = mock_decode_refresh_token
 
     mock_auth_repository.get_user_by_id.return_value = User(id=mock_user_id)
 
@@ -274,7 +282,8 @@ def test_logout_fails_when_password_verification_fails(
 
     mocker.patch("app.services.auth.verify_password", return_value=False)
 
-    auth_service.revoke_refresh_token = mocker.Mock()
+    mock_revoke_refresh_token = Mock()
+    auth_service.revoke_refresh_token = mock_revoke_refresh_token
 
     with pytest.raises(CredentialException):
         auth_service.logout(token=input_token)

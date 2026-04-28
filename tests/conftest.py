@@ -1,11 +1,14 @@
+from unittest.mock import Mock
+
 import pytest
 
+from app.repositories.auth import AuthRepository
 from app.services.auth import AuthService
 
 
 @pytest.fixture
-def mock_auth_repository(mocker):
-    return mocker.Mock()
+def mock_auth_repository():
+    return Mock(spec=AuthRepository)
 
 
 @pytest.fixture
