@@ -94,3 +94,13 @@
   - [x] `revoke_refresh_token()` iw not called
   - [x] `create_token()` is not called
   - [x] `save_refresh_token()` is not called
+
+## decode_refresh_token
+
+- [x] Returns valid `user_id` and `jti` from decoded refresh token
+- [x] Raises `CredentialException` when JWT decoding fails
+- [x] Raises `CredentialException` when `sub` cannot be converted to UUID
+- [x] Raises `CredentialException` when `jti` cannot be converted to UUID
+- [x] Raises `CredentialException` when payload `type` is not `"refresh"`
+- [x] Raises `CredentialException` when `sub` cannot be retrieved from payload
+- [x] Raises `CredentialException` when `jti` cannot be retrieved from payload
