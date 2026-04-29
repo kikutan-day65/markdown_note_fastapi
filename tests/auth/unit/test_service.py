@@ -492,3 +492,142 @@ def test_refresh_fails_when_target_has_already_been_revoked(
     mock_revoke_refresh_token.assert_not_called()
     mock_create_token.assert_not_called()
     mock_save_refresh_token.assert_not_called()
+
+
+def test_decode_refresh_token_success(auth_service):
+    user_id = uuid.uuid4()
+    jti = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "refresh",
+        "sub": str(user_id),
+        "jti": str(jti),
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    decoded_user_id, decoded_jti = auth_service.decode_refresh_token(
+        input_refresh_token
+    )
+
+    assert decoded_user_id == user_id
+    assert decoded_jti == jti
+
+
+def test_decode_refresh_fails_token_when_jwt_decoding_fails(auth_service):
+    input_refresh_token = "invalid.jwt.token"
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_decode_refresh_fails_token_when_sub_cannot_be_converted_to_uuid(auth_service):
+    invalid_sub = "invalid_sub"
+    jti = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "refresh",
+        "sub": invalid_sub,
+        "jti": str(jti),
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_decode_refresh_fails_token_when_jti_cannot_be_converted_to_uuid(auth_service):
+    user_id = uuid.uuid4()
+    invalid_jti = "invalid_jti"
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "refresh",
+        "sub": str(user_id),
+        "jti": invalid_jti,
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_decode_refresh_token_fails_when_type_in_payload_is_not_refresh(auth_service):
+    user_id = uuid.uuid4()
+    jti = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "access",
+        "sub": str(user_id),
+        "jti": str(jti),
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_decode_refresh_token_fails_when_sub_not_found_in_payload(auth_service):
+    jti = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "refresh",
+        "jti": str(jti),
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_decode_refresh_token_fails_when_jti_not_found_in_payload(auth_service):
+    user_id = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=10)
+
+    to_encode = {
+        "type": "refresh",
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": now,
+    }
+
+    input_refresh_token = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    with pytest.raises(CredentialException):
+        auth_service.decode_refresh_token(input_refresh_token)
