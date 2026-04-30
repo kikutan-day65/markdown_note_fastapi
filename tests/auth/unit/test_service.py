@@ -644,3 +644,17 @@ def test_save_refresh_token(mocker, mock_auth_repository, auth_service):
     assert saved_refresh_token.token == "hashed_refresh_token"
     assert saved_refresh_token.expires_at == expire
     assert saved_refresh_token.jti == jti
+
+
+def test_revoke_refresh_token(auth_service, mock_auth_repository):
+    input_refresh_token = RefreshToken(token="hashed_input_token", jti=uuid.uuid4())
+
+    before = datetime.now(timezone.utc)
+    auth_service.revoke_refresh_token(input_refresh_token)
+    after = datetime.now(timezone.utc)
+
+    saved_refresh_token = mock_auth_repository.save_refresh_token.call_args.args[0]
+
+    mock_auth_repository.save_refresh_token.assert_called_once_with(input_refresh_token)
+    assert saved_refresh_token.revoked_at is not None
+    assert before <= saved_refresh_token.revoked_at <= after
