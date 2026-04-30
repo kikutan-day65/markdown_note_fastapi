@@ -104,3 +104,11 @@
 - [x] Raises `CredentialException` when payload `type` is not `"refresh"`
 - [x] Raises `CredentialException` when `sub` cannot be retrieved from payload
 - [x] Raises `CredentialException` when `jti` cannot be retrieved from payload
+
+## save_refresh_token
+
+- [x] Calls `repository.save_refresh_token()` with correct `RefreshToken`
+  - [x] `user_id` in `RefreshToken` matches input `user_id`
+  - [x] `token` in `RefreshToken` is hashed
+  - [x] `expires_at` in `RefreshToken` matches input `expire`
+  - [x] `jti` in `RefreshToken` matches input `jti`
