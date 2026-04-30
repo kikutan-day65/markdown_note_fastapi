@@ -631,3 +631,27 @@ def test_decode_refresh_token_fails_when_jti_not_found_in_payload(auth_service):
 
     with pytest.raises(CredentialException):
         auth_service.decode_refresh_token(input_refresh_token)
+
+
+def test_save_refresh_token(mocker, mock_auth_repository, auth_service):
+    user_id = uuid.uuid4()
+    token = "dummy_refresh_token"
+    expire = datetime.now(timezone.utc) + timedelta(minutes=10)
+    jti = uuid.uuid4()
+
+    mock_get_password_hash = mocker.patch(
+        "app.services.auth.get_password_hash", return_value="hashed_refresh_token"
+    )
+
+    auth_service.save_refresh_token(
+        user_id=user_id, token=token, expire=expire, jti=jti
+    )
+
+    saved_refresh_token = mock_auth_repository.save_refresh_token.call_args.args[0]
+
+    mock_get_password_hash.assert_called_with(token)
+    mock_auth_repository.save_refresh_token.assert_called_once()
+    assert saved_refresh_token.user_id == user_id
+    assert saved_refresh_token.token == "hashed_refresh_token"
+    assert saved_refresh_token.expires_at == expire
+    assert saved_refresh_token.jti == jti
