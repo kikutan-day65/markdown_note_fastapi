@@ -104,6 +104,23 @@ def refresh_token(user):
 
 
 @pytest.fixture
+def saved_refresh_token(test_db_session, user):
+    refresh_token = RefreshToken(
+        id=uuid.uuid4(),
+        jti=uuid.uuid4(),
+        token="hashed_refresh_token",
+        expires_at=datetime.now(timezone.utc),
+        user_id=user.id,
+    )
+
+    test_db_session.add(refresh_token)
+    test_db_session.commit()
+    test_db_session.refresh(refresh_token)
+
+    return refresh_token
+
+
+@pytest.fixture
 def mock_auth_repository():
     return Mock(spec=AuthRepository)
 
