@@ -69,3 +69,23 @@ def test_save_refresh_token_success(auth_repository, refresh_token, test_db_sess
     assert saved.jti == refresh_token.jti
     assert saved.user_id == refresh_token.user_id
     assert saved.token == refresh_token.token
+
+
+def test_get_refresh_token_by_jti_success(auth_repository, saved_refresh_token):
+    jti = saved_refresh_token.jti
+
+    result = auth_repository.get_refresh_token_by_jti(jti)
+
+    assert result is not None
+    assert result.id == saved_refresh_token.id
+    assert result.jti == jti
+
+
+def test_get_refresh_token_by_jti_returns_none_when_refresh_token_not_found(
+    auth_repository, saved_refresh_token
+):
+    jti = uuid.uuid4()
+
+    result = auth_repository.get_refresh_token_by_jti(jti)
+
+    assert result is None
