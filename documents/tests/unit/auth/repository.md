@@ -17,3 +17,8 @@
   - [x] `jti` matches `jti` in input `RefreshToken`
   - [x] `token` in `RefreshToken` matches token in input `RefreshToken`
   - [x] `user_id` in `RefreshToken` matches user_id in input `RefreshToken`
+
+## get_refresh_token_by_jti
+
+- [x] Returns specific `RefreshToken`
+- [x] Returns `None` when refresh token not found
