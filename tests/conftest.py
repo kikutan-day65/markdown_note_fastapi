@@ -23,6 +23,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.settings import settings
 from app.db.base import Base
+from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.repositories.auth import AuthRepository
 from app.services.auth import AuthService
@@ -88,6 +89,18 @@ def deleted_user(test_db_session):
     test_db_session.refresh(user)
 
     return user
+
+
+@pytest.fixture
+def refresh_token(user):
+    refresh_token = RefreshToken(
+        jti=uuid.uuid4(),
+        token="hashed_refresh_token",
+        expires_at=datetime.now(timezone.utc),
+        user_id=user.id,
+    )
+
+    return refresh_token
 
 
 @pytest.fixture
