@@ -1,4 +1,6 @@
 import os
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -21,6 +23,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.settings import settings
 from app.db.base import Base
+from app.db.models.user import User
 from app.repositories.auth import AuthRepository
 from app.services.auth import AuthService
 
@@ -51,6 +54,40 @@ def test_db_session(setup_test_db):
         yield db
     finally:
         db.close()
+
+
+@pytest.fixture
+def user(test_db_session):
+    user = User(
+        id=uuid.uuid4(),
+        username="test_user_01",
+        email="test_user_01@example.com",
+        password_hash="hashed_password",
+        is_verified=True,
+    )
+
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+def deleted_user(test_db_session):
+    user = User(
+        id=uuid.uuid4(),
+        username="deleted_user",
+        email="test_user_01@example.com",
+        password_hash="hashed_password",
+        deleted_at=datetime.now(timezone.utc),
+    )
+
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
+
+    return user
 
 
 @pytest.fixture
