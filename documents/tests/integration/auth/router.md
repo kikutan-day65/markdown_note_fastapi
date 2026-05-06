@@ -8,3 +8,8 @@
 
 - [x] Returns 200 when refresh succeeds
 - [x] Returns 401 when refresh token is invalid
+
+## logout
+
+- [x] Returns 204 when logout succeeds
+- [x] Returns 401 when refresh token is invalid
