@@ -49,3 +49,23 @@ def test_refresh_returns_401_when_refresh_fails(client, integration_test_refresh
     result = client.post(url, json=token)
 
     assert result.status_code == 401
+
+
+def test_logout_returns_200_when_refresh_succeeds(
+    client, integration_test_refresh_token
+):
+    token = {"refresh_token": integration_test_refresh_token}
+
+    url = app.url_path_for("logout")
+    result = client.post(url, json=token)
+
+    assert result.status_code == 204
+
+
+def test_logout_returns_401_when_refresh_fails(client, integration_test_refresh_token):
+    token = {"refresh_token": "invalid_refresh_token"}
+
+    url = app.url_path_for("logout")
+    result = client.post(url, json=token)
+
+    assert result.status_code == 401
