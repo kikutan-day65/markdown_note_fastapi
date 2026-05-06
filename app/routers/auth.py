@@ -2,38 +2,26 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
-from app.repositories.auth import AuthRepository
-from app.schemas.auth import Token
-from app.services.auth import AuthService
+from app.api.deps import AuthServiceDep
+from app.schemas.auth import RefreshTokenRequest, Token
 
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/login")
+@router.post("/login", response_model=Token, status_code=200, name="login")
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_db),
+    service: AuthServiceDep,
 ) -> Token:
-    repository = AuthRepository(db)
-    service = AuthService(repository)
-
     return service.login(form_data=form_data)
 
 
-@router.post("/refresh")
-def refresh(refresh_token: str, db: Session = Depends(get_db)) -> Token:
-    repository = AuthRepository(db)
-    service = AuthService(repository)
-
-    return service.refresh(token=refresh_token)
+@router.post("/refresh", response_model=Token, status_code=200, name="refresh")
+def refresh(request: RefreshTokenRequest, service: AuthServiceDep) -> Token:
+    return service.refresh(token=request.refresh_token)
 
 
-@router.post("/logout")
-def logout(refresh_token: str, db: Session = Depends(get_db)):
-    repository = AuthRepository(db)
-    service = AuthService(repository)
-
-    service.logout(refresh_token)
+@router.post("/logout", status_code=204, name="logout")
+def logout(request: RefreshTokenRequest, service: AuthServiceDep):
+    service.logout(request.refresh_token)
