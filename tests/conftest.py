@@ -187,3 +187,19 @@ class DummyFormData:
 @pytest.fixture
 def dummy_form_data():
     return DummyFormData(username="testuser", password="password123")
+
+
+@pytest.fixture
+def username_login_form_data():
+    return {
+        "username": "integration_test_user",
+        "password": "password123",
+    }
+
+
+@pytest.fixture
+def email_login_form_data():
+    return {
+        "username": "integration_test_user@example.com",
+        "password": "password123",
+    }
