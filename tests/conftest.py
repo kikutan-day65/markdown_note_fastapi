@@ -23,6 +23,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
 from app.api.deps import get_db
+from app.core.security import get_password_hash
 from app.core.settings import settings
 from app.db.base import Base
 from app.db.models.refresh_token import RefreshToken
@@ -141,6 +142,25 @@ def override_get_db():
 @pytest.fixture
 def client(override_get_db):
     return TestClient(app)
+
+
+@pytest.fixture
+def integration_test_user(test_db_session):
+    plain_password = "password123"
+
+    user = User(
+        id=uuid.uuid4(),
+        username="integration_test_user",
+        email="integration_test_user@example.com",
+        password_hash=get_password_hash(plain_password),
+        is_verified=True,
+    )
+
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
+
+    return user
 
 
 @pytest.fixture
