@@ -16,6 +16,7 @@ from app.core.settings import settings
 from app.db.models import User
 from app.db.session import SessionLocal
 from app.repositories.auth import AuthRepository
+from app.services.auth import AuthService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -28,13 +29,30 @@ def get_db():
         db.close()
 
 
+DatabaseSession = Annotated[Session, Depends(get_db)]
+
+
+def get_auth_repository(db: DatabaseSession):
+    return AuthRepository(db)
+
+
+AuthRepositoryDep = Annotated[AuthRepository, Depends(get_auth_repository)]
+
+
+def get_auth_service(repository: AuthRepositoryDep):
+    return AuthService(repository)
+
+
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+
 def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    repository: AuthRepositoryDep,
 ):
     if not token:
         raise CredentialException()
 
-    repository = AuthRepository(db)
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]

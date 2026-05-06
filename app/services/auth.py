@@ -22,7 +22,7 @@ class AuthService:
     def __init__(self, repository: AuthRepository):
         self.repository = repository
 
-    def login(self, form_data: OAuth2PasswordRequestForm):
+    def login(self, form_data: OAuth2PasswordRequestForm) -> Token:
         identifier = form_data.username  # put username/email to identifier
 
         user = self.authenticate_user(identifier, form_data.password)
@@ -45,7 +45,7 @@ class AuthService:
             access_token=access_token, refresh_token=refresh_token, token_type="bearer"
         )
 
-    def logout(self, token: str):
+    def logout(self, token: str) -> None:
         user_id, jti = self.decode_refresh_token(token=token)
 
         user = self.repository.get_user_by_id(user_id)

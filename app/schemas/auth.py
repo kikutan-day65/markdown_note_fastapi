@@ -7,6 +7,5 @@ class Token(BaseModel):
     token_type: str
 
 
-class LoginRequest(BaseModel):
-    identifier: str
-    password: str
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
