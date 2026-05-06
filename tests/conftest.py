@@ -17,14 +17,17 @@ if not Path(TARGET_ENV_FILE).exists():
     raise RuntimeError(f"Test env file does not exist: {TARGET_ENV_FILE}")
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
+from app.api.deps import get_db
 from app.core.settings import settings
 from app.db.base import Base
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
+from app.main import app
 from app.repositories.auth import AuthRepository
 from app.services.auth import AuthService
 
@@ -118,6 +121,26 @@ def saved_refresh_token(test_db_session, user):
     test_db_session.refresh(refresh_token)
 
     return refresh_token
+
+
+@pytest.fixture
+def override_get_db():
+    def _get_test_db():
+        db = SessionTestLocal()
+
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = _get_test_db
+    yield
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(override_get_db):
+    return TestClient(app)
 
 
 @pytest.fixture
