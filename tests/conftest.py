@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -16,6 +16,7 @@ if TARGET_ENV_FILE != ".env.test":
 if not Path(TARGET_ENV_FILE).exists():
     raise RuntimeError(f"Test env file does not exist: {TARGET_ENV_FILE}")
 
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -161,6 +162,39 @@ def integration_test_user(test_db_session):
     test_db_session.refresh(user)
 
     return user
+
+
+@pytest.fixture
+def integration_test_refresh_token(test_db_session, integration_test_user):
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    jti = uuid.uuid4()
+
+    to_encode = {
+        "sub": str(integration_test_user.id),
+        "type": "refresh",
+        "exp": expire,
+        "iat": now,
+        "jti": str(jti),
+    }
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+    refresh_token = RefreshToken(
+        id=uuid.uuid4(),
+        jti=jti,
+        token=get_password_hash(encoded_jwt),
+        expires_at=expire,
+        user_id=integration_test_user.id,
+    )
+
+    test_db_session.add(refresh_token)
+    test_db_session.commit()
+    test_db_session.refresh(refresh_token)
+
+    return encoded_jwt
 
 
 @pytest.fixture
