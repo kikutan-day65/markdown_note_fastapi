@@ -32,6 +32,7 @@ from app.db.models.user import User
 from app.main import app
 from app.repositories.auth import AuthRepository
 from app.repositories.user import UserRepository
+from app.schemas.user import UserCreate
 from app.services.auth import AuthService
 from app.services.user import UserService
 
@@ -249,3 +250,13 @@ def email_login_form_data():
         "username": "integration_test_user@example.com",
         "password": "password123",
     }
+
+
+@pytest.fixture
+def user_create_data():
+    return UserCreate(
+        username="test_user_01",
+        email="test_user_01@example.com",
+        password="password123",
+        avatar_url="avatar-url",
+    )
