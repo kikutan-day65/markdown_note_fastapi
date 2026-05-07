@@ -31,7 +31,9 @@ from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.main import app
 from app.repositories.auth import AuthRepository
+from app.repositories.user import UserRepository
 from app.services.auth import AuthService
+from app.services.user import UserService
 
 # Ensure DATABASE_URL points to a test db
 url = make_url(settings.DATABASE_URL)
@@ -210,6 +212,16 @@ def auth_service(mock_auth_repository):
 @pytest.fixture
 def auth_repository(test_db_session):
     return AuthRepository(db=test_db_session)
+
+
+@pytest.fixture
+def mock_user_repository():
+    return Mock(spec=UserRepository)
+
+
+@pytest.fixture
+def user_service(mock_user_repository):
+    return UserService(repository=mock_user_repository)
 
 
 class DummyFormData:
