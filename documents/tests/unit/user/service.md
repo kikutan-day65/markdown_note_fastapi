@@ -13,3 +13,9 @@
 
 - [x] Calls `repository.get_all()`
 - [x] Returns result of `repository.get_all()`
+
+## retrieve_user
+
+- [x] Calls `repository.get_by_id()` with correct argument
+- [x] Returns result of `repository.get_by_id()`
+- [x] Raises `UserNotFoundException` when user not found
