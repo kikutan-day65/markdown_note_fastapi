@@ -1,3 +1,8 @@
+import uuid
+
+import pytest
+
+from app.core.exceptions import UserAlreadyExistsException, UserNotFoundException
 from app.db.models.user import User
 
 
@@ -56,3 +61,24 @@ def test_list_users_success(mock_user_repository, user_service):
 
     mock_user_repository.get_all.assert_called_once()
     assert result == users
+
+
+def test_retrieve_user_success(mock_user_repository, user_service):
+    user_id = uuid.uuid4()
+    user = User(id=user_id)
+
+    mock_user_repository.get_by_id.return_value = user
+
+    result = user_service.retrieve_user(user_id)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    assert result == user
+
+
+def test_retrieve_user_fails_when_user_not_found(mock_user_repository, user_service):
+    user_id = uuid.uuid4()
+
+    mock_user_repository.get_by_id.return_value = None
+
+    with pytest.raises(UserNotFoundException):
+        user_service.retrieve_user(user_id)
