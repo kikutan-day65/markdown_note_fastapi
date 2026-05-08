@@ -7,3 +7,8 @@
   - [x] Sets `password_hash` from hashed input password
   - [x] Sets `avatar_url` from input user data
 - [x] Returns result of `repository.save()`
+
+## list_users
+
+- [x] Calls `repository.get_all()`
+- [x] Returns result of `repository.get_all()`
