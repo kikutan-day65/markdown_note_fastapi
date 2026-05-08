@@ -23,3 +23,14 @@ def test_create_user_success(
     assert saved_new_user.password_hash == mock_get_password_hash.return_value
     assert saved_new_user.avatar_url == user_create_data.avatar_url
     assert result == new_user
+
+
+def test_list_users_success(mock_user_repository, user_service):
+    users = [User(), User()]
+
+    mock_user_repository.get_all.return_value = users
+
+    result = user_service.list_users()
+
+    mock_user_repository.get_all.assert_called_once()
+    assert result == users
