@@ -7,6 +7,7 @@
   - [x] Sets `password_hash` from hashed input password
   - [x] Sets `avatar_url` from input user data
 - [x] Returns result of `repository.save()`
+- [x] Raises `UserAlreadyExistsException` when user already exists
 
 ## list_users
 
