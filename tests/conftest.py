@@ -83,6 +83,25 @@ def user(test_db_session):
 
 
 @pytest.fixture
+def admin_user(test_db_session):
+    user = User(
+        id=uuid.uuid4(),
+        username="admin_user",
+        email="admin_user@example.com",
+        password_hash="hashed_password",
+        is_verified=True,
+        is_admin=True,
+        is_active=True,
+    )
+
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
+
+    return user
+
+
+@pytest.fixture
 def deleted_user(test_db_session):
     user = User(
         id=uuid.uuid4(),
