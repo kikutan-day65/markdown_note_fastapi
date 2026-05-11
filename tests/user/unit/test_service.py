@@ -2,8 +2,13 @@ import uuid
 
 import pytest
 
-from app.core.exceptions import UserAlreadyExistsException, UserNotFoundException
+from app.core.exceptions import (
+    PermissionDeniedException,
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 from app.db.models.user import User
+from app.schemas.user import UserUpdate
 
 
 def test_create_user_success(
@@ -48,7 +53,7 @@ def test_create_user_fails_when_user_already_exists(
     mock_user_repository.get_by_username_or_email.assert_called_once_with(
         username=user_create_data.username, email=user_create_data.email
     )
-    mock_get_password_hash.asset_not_called()
+    mock_get_password_hash.assert_not_called()
     mock_user_repository.save.assert_not_called()
 
 
@@ -82,3 +87,99 @@ def test_retrieve_user_fails_when_user_not_found(mock_user_repository, user_serv
 
     with pytest.raises(UserNotFoundException):
         user_service.retrieve_user(user_id)
+
+
+def test_update_user_success_by_admin_user(
+    mock_user_repository, user_service, user, admin_user
+):
+    user_id = user.id
+    user_data = UserUpdate(username="updated_username")
+
+    mock_user_repository.get_by_id.return_value = user
+    mock_user_repository.get_by_username.return_value = None
+    mock_user_repository.save.return_value = user
+
+    result = user_service.update_user(user_id, user_data, admin_user)
+
+    mock_user_repository.save.assert_called_once()
+
+    saved_user = mock_user_repository.save.call_args.args[0]
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.get_by_username.assert_called_once_with(
+        username=user_data.username
+    )
+    assert saved_user.username == user_data.username
+    assert result.username == user_data.username
+
+
+def test_update_user_success_by_owner(mock_user_repository, user_service, user):
+    user_id = user.id
+    user_data = UserUpdate(avatar_url="updated-avatar-url")
+
+    mock_user_repository.get_by_id.return_value = user
+    mock_user_repository.get_by_username.return_value = None
+    mock_user_repository.save.return_value = user
+
+    result = user_service.update_user(user_id, user_data, user)
+
+    mock_user_repository.save.assert_called_once()
+
+    saved_user = mock_user_repository.save.call_args.args[0]
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.get_by_username.assert_not_called()
+    assert saved_user.avatar_url == user_data.avatar_url
+    assert result.avatar_url == user_data.avatar_url
+
+
+def test_update_user_fails_when_user_not_found(
+    mock_user_repository, user_service, user, admin_user
+):
+    user_id = user.id
+    user_data = UserUpdate(username="updated_username")
+
+    mock_user_repository.get_by_id.return_value = None
+
+    with pytest.raises(UserNotFoundException):
+        user_service.update_user(user_id, user_data, admin_user)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.get_by_username.assert_not_called()
+    mock_user_repository.save.assert_not_called()
+
+
+def test_update_user_fails_when_not_admin_and_not_owner(
+    mock_user_repository, user_service, user
+):
+    user_id = uuid.uuid4()
+    user_data = UserUpdate(username="updated_username")
+
+    mock_user_repository.get_by_id.return_value = User(id=uuid.uuid4())
+
+    with pytest.raises(PermissionDeniedException):
+        user_service.update_user(user_id, user_data, user)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.get_by_username.assert_not_called()
+    mock_user_repository.save.assert_not_called()
+
+
+def test_update_user_fails_when_username_is_already_taken(
+    mock_user_repository, user_service, user
+):
+    user_id = user.id
+    user_data = UserUpdate(username="updated_username")
+    existing_user = User(id=uuid.uuid4(), username="updated_username")
+
+    mock_user_repository.get_by_id.return_value = user
+    mock_user_repository.get_by_username.return_value = existing_user
+
+    with pytest.raises(UserAlreadyExistsException):
+        user_service.update_user(user_id, user_data, user)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.get_by_username.assert_called_once_with(
+        username=user_data.username
+    )
+    mock_user_repository.save.assert_not_called()
