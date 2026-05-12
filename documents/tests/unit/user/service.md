@@ -41,3 +41,21 @@
 - [x] Raises `UserNotFoundException` when user not found
 - [x] Raises `PermissionDeniedException` when request user is not admin and not owner
 - [x] Raises `UserAlreadyExistsException` when update data includes existing `username`
+
+## delete_user
+
+### Request by admin user
+
+- [x] Calls `repository.get_by_id()` with input user id
+- [x] Calls `repository.save()` with correct target user
+
+### Request by owner
+
+- [x] Calls `repository.get_by_id()` with input user id
+- [x] Calls `repository.save()` with correct target user
+
+### Negative cases
+
+- [x] Raises `UserNotFoundException` when user not found
+- [x] Raises `PermissionDeniedException` when request user is not admin and not owner
+- [x] Raises `UserAlreadyExistsException` when update data includes existing `username`
