@@ -183,3 +183,64 @@ def test_update_user_fails_when_username_is_already_taken(
         username=user_data.username
     )
     mock_user_repository.save.assert_not_called()
+
+
+def test_delete_user_success_by_admin_user(
+    mock_user_repository, user_service, user, admin_user
+):
+    user_id = user.id
+
+    mock_user_repository.get_by_id.return_value = user
+
+    user_service.delete_user(user_id, admin_user)
+
+    mock_user_repository.save.assert_called_once_with(user)
+
+    deleted_user = mock_user_repository.save.call_args.args[0]
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    assert deleted_user.deleted_at is not None
+
+
+def test_delete_user_success_by_owner(mock_user_repository, user_service, user):
+    user_id = user.id
+
+    mock_user_repository.get_by_id.return_value = user
+
+    user_service.delete_user(user_id, user)
+
+    mock_user_repository.save.assert_called_once_with(user)
+
+    deleted_user = mock_user_repository.save.call_args.args[0]
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    assert deleted_user.deleted_at is not None
+
+
+def test_test_delete_user_fails_when_user_not_found(
+    mock_user_repository, user_service, user
+):
+    user_id = uuid.uuid4()
+
+    mock_user_repository.get_by_id.return_value = None
+
+    with pytest.raises(UserNotFoundException):
+        user_service.delete_user(user_id, user)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.save.assert_not_called()
+
+
+def test_delete_user_fails_when_not_admin_and_not_owner(
+    mock_user_repository, user_service, user
+):
+    user_id = uuid.uuid4()
+    target = User(id=uuid.uuid4())
+
+    mock_user_repository.get_by_id.return_value = target
+
+    with pytest.raises(PermissionDeniedException):
+        user_service.delete_user(user_id, user)
+
+    mock_user_repository.get_by_id.assert_called_once_with(user_id)
+    mock_user_repository.save.assert_not_called()
