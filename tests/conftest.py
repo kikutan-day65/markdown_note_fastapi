@@ -244,6 +244,11 @@ def user_service(mock_user_repository):
     return UserService(repository=mock_user_repository)
 
 
+@pytest.fixture
+def user_repository(test_db_session):
+    return UserRepository(db=test_db_session)
+
+
 class DummyFormData:
     def __init__(self, username: str, password: str):
         self.username = username
@@ -279,3 +284,34 @@ def user_create_data():
         password="password123",
         avatar_url="avatar-url",
     )
+
+
+@pytest.fixture
+def users(test_db_session):
+    users = []
+
+    for i in range(3):
+        deleted_time = None
+        if i == 2:
+            deleted_time = datetime.now(timezone.utc)
+
+        num = str(i).zfill(2)
+
+        users.append(
+            User(
+                id=uuid.uuid4(),
+                username=f"test_user_{num}",
+                email=f"test_user_{num}@example.com",
+                password_hash="hashed_password",
+                is_verified=True,
+                deleted_at=deleted_time,
+            )
+        )
+
+    test_db_session.add_all(users)
+    test_db_session.commit()
+
+    for user in users:
+        test_db_session.refresh(user)
+
+    return users
