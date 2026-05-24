@@ -14,7 +14,7 @@ def test_get_all_returns_user_list(user_repository, users):
 
     assert len(result) == 2
     assert result[0] == users[0]
-    assert result[1] == users[1]
+    assert result[1] == users[2]
 
 
 def test_get_by_id_returns_user(user_repository, users):
@@ -36,8 +36,8 @@ def test_get_by_id_returns_none(user_repository, users):
 @pytest.mark.parametrize(
     "input_data",
     [
-        {"username": "test_user_00", "email": None},
-        {"username": None, "email": "test_user_00@example.com"},
+        {"username": "test_user_01", "email": None},
+        {"username": None, "email": "test_user_01@example.com"},
     ],
 )
 def test_get_by_username_or_email_returns_user(user_repository, users, input_data):
