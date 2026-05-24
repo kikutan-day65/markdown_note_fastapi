@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
@@ -26,4 +26,23 @@ class UserRepository:
             User.id == user_id,
             User.deleted_at.is_(None),
         )
+        return self.db.scalar(stmt)
+
+    def get_by_username_or_email(self, username: str, email: str) -> User | None:
+        stmt = select(User).where(
+            or_(
+                User.username == username,
+                User.email == email,
+            ),
+            User.deleted_at.is_(None),
+        )
+
+        return self.db.scalar(stmt)
+
+    def get_by_username(self, username: str) -> User | None:
+        stmt = select(User).where(
+            User.username == username,
+            User.deleted_at.is_(None),
+        )
+
         return self.db.scalar(stmt)
