@@ -1,77 +1,74 @@
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, status
 
-from app.api.deps import get_current_active_user, get_current_admin_user, get_db
+from app.api.deps import CurrentActiveUserDep, CurrentAdminUserDep, UserServiceDep
 from app.db.models.user import User
-from app.repositories.user import UserRepository
 from app.schemas.user import UserAdmin, UserCreate, UserMe, UserPublic, UserUpdate
-from app.services.user import UserService
 
 router = APIRouter(tags=["users"])
 
 
-@router.get("/me", response_model=UserMe, status_code=status.HTTP_200_OK)
-def read_me(current_user: Annotated[User, Depends(get_current_active_user)]) -> User:
+@router.get(
+    "/me",
+    response_model=UserMe,
+    status_code=status.HTTP_200_OK,
+    name="read_me",
+)
+def read_me(current_user: CurrentActiveUserDep) -> User:
     return current_user
 
 
-@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
-    repository = UserRepository(db)
-    service = UserService(repository)
-
-    new_user = service.create_user(user)
-
-    return new_user
-
-
-@router.get("", response_model=list[UserAdmin])
-def list_users(
-    _: Annotated[User, Depends(get_current_admin_user)], db: Session = Depends(get_db)
-) -> list[User]:
-    repository = UserRepository(db)
-    service = UserService(repository)
-
-    users = service.list_users()
-
-    return users
+@router.post(
+    "",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    name="create_user",
+)
+def create_user(user: UserCreate, service: UserServiceDep) -> User:
+    return service.create_user(user)
 
 
-@router.get("/{id}", response_model=UserPublic)
-def get_user(id: uuid.UUID, db: Session = Depends(get_db)) -> User:
-    repository = UserRepository(db)
-    service = UserService(repository)
+@router.get(
+    "",
+    response_model=list[UserAdmin],
+    status_code=status.HTTP_200_OK,
+    name="list_users",
+)
+def list_users(_: CurrentAdminUserDep, service: UserServiceDep) -> list[User]:
+    return service.list_users()
 
-    user = service.retrieve_user(id)
 
-    return user
+@router.get(
+    "/{id}", response_model=UserPublic, status_code=status.HTTP_200_OK, name="get_user"
+)
+def get_user(id: uuid.UUID, service: UserServiceDep) -> User:
+    return service.retrieve_user(id)
 
 
-@router.patch("/{id}", response_model=UserAdmin)
+@router.patch(
+    "/{id}",
+    response_model=UserAdmin,
+    status_code=status.HTTP_200_OK,
+    name="update_user",
+)
 def update_user(
     id: uuid.UUID,
     user: UserUpdate,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Session = Depends(get_db),
+    current_user: CurrentActiveUserDep,
+    service: UserServiceDep,
 ) -> User:
-    repository = UserRepository(db)
-    service = UserService(repository)
-
-    updated_user = service.update_user(id, user, current_user)
-
-    return updated_user
+    return service.update_user(id, user, current_user)
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    name="delete_user",
+)
 def delete_user(
     id: uuid.UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Session = Depends(get_db),
+    current_user: CurrentActiveUserDep,
+    service: UserServiceDep,
 ) -> None:
-    repository = UserRepository(db)
-    service = UserService(repository)
-
     service.delete_user(id, current_user)
