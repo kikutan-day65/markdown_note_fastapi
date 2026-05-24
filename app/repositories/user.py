@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
@@ -17,14 +18,31 @@ class UserRepository:
         return user
 
     def get_all(self) -> list[User]:
-        return self.db.query(User).all()
+        stmt = select(User).where(User.deleted_at.is_(None))
+        return self.db.scalars(stmt).all()
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        return (
-            self.db.query(User)
-            .filter(
-                User.id == user_id,
-                User.deleted_at.is_(None),
-            )
-            .first()
+        stmt = select(User).where(
+            User.id == user_id,
+            User.deleted_at.is_(None),
         )
+        return self.db.scalar(stmt)
+
+    def get_by_username_or_email(self, username: str, email: str) -> User | None:
+        stmt = select(User).where(
+            or_(
+                User.username == username,
+                User.email == email,
+            ),
+            User.deleted_at.is_(None),
+        )
+
+        return self.db.scalar(stmt)
+
+    def get_by_username(self, username: str) -> User | None:
+        stmt = select(User).where(
+            User.username == username,
+            User.deleted_at.is_(None),
+        )
+
+        return self.db.scalar(stmt)
