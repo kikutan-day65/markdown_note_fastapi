@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.db.models.article_tag import ArticleTag
+    from app.models.article_tag import ArticleTag
 
 
 class Tag(Base):
@@ -22,7 +22,6 @@ class Tag(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    # Relationships (ORM)
     article_tags: Mapped[list["ArticleTag"]] = relationship(
         "ArticleTag", back_populates="tag", cascade="all"
     )

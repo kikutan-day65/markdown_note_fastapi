@@ -13,7 +13,7 @@ from app.core.exceptions import (
     PermissionDeniedException,
 )
 from app.core.settings import settings
-from app.db.models import User
+from app.models import User
 from app.db.session import SessionLocal
 from app.repositories.auth import AuthRepository
 from app.repositories.user import UserRepository

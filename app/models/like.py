@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.db.models.article import Article
-    from app.db.models.user import User
+    from app.models.article import Article
+    from app.models.user import User
 
 
 class Like(Base):
@@ -24,8 +24,6 @@ class Like(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-
-    # Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
@@ -33,6 +31,5 @@ class Like(Base):
         Uuid(as_uuid=True), ForeignKey("articles.id"), nullable=False
     )
 
-    # Relationships (ORM)
     user: Mapped["User"] = relationship("User", back_populates="likes")
     article: Mapped["Article"] = relationship("Article", back_populates="likes")

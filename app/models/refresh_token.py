@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.db.models.user import User
+    from app.models.user import User
 
 
 class RefreshToken(Base):
@@ -17,10 +17,10 @@ class RefreshToken(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    token: Mapped[str] = mapped_column(nullable=False)
     jti: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False
     )
-    token: Mapped[str] = mapped_column(nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -30,11 +30,8 @@ class RefreshToken(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-
-    # Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
-    # Relationships (ORM)
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")

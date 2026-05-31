@@ -3,7 +3,7 @@ import uuid
 import pytest
 from sqlalchemy import select
 
-from app.db.models.refresh_token import RefreshToken
+from app.models.refresh_token import RefreshToken
 
 
 @pytest.mark.parametrize("identifier_field", ["username", "email"])

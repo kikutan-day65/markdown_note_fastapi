@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, status
 
 from app.api.deps import CurrentActiveUserDep, CurrentAdminUserDep, UserServiceDep
-from app.db.models.user import User
+from app.models.user import User
 from app.schemas.user import UserAdmin, UserCreate, UserMe, UserPublic, UserUpdate
 
 router = APIRouter(tags=["users"])

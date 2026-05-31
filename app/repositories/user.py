@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
+from app.models.user import User
 
 
 class UserRepository:
