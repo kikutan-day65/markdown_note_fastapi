@@ -8,10 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.db.models.article_tag import ArticleTag
-    from app.db.models.comment import Comment
-    from app.db.models.like import Like
-    from app.db.models.user import User
+    from app.models.article_tag import ArticleTag
+    from app.models.comment import Comment
+    from app.models.like import Like
+    from app.models.user import User
 
 
 class Article(Base):
@@ -34,13 +34,10 @@ class Article(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-
-    # Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
-    # Relationships (ORM)
     user: Mapped["User"] = relationship("User", back_populates="articles")
     likes: Mapped[list["Like"]] = relationship(
         "Like", back_populates="article", cascade="all"
@@ -49,5 +46,5 @@ class Article(Base):
         "ArticleTag", back_populates="article", cascade="all"
     )
     comments: Mapped[list["Comment"]] = relationship(
-        "Comment", back_populates="article"
+        "Comment", back_populates="article", cascade="all"
     )
