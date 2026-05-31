@@ -7,7 +7,7 @@ from app.core.exceptions import (
     UserNotFoundException,
 )
 from app.core.security import get_password_hash
-from app.db.models.user import User
+from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserUpdate
 

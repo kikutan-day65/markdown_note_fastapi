@@ -6,7 +6,7 @@ import jwt
 import pytest
 
 from app.core.settings import settings
-from app.db.models.user import User
+from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate
 from app.services.user import UserService

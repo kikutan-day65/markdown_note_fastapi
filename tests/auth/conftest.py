@@ -7,8 +7,8 @@ import pytest
 
 from app.core.security import get_password_hash
 from app.core.settings import settings
-from app.db.models.refresh_token import RefreshToken
-from app.db.models.user import User
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 from app.repositories.auth import AuthRepository
 from app.services.auth import AuthService
 

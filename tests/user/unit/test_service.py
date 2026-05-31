@@ -7,7 +7,7 @@ from app.core.exceptions import (
     UserAlreadyExistsException,
     UserNotFoundException,
 )
-from app.db.models.user import User
+from app.models.user import User
 from app.schemas.user import UserUpdate
 
 

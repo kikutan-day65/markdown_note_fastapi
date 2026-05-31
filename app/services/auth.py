@@ -12,8 +12,8 @@ from app.core.exceptions import (
 )
 from app.core.security import DUMMY_HASH, get_password_hash, verify_password
 from app.core.settings import settings
-from app.db.models.refresh_token import RefreshToken
-from app.db.models.user import User
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 from app.repositories.auth import AuthRepository
 from app.schemas.auth import Token
 

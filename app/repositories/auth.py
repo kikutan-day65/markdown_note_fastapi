@@ -3,8 +3,8 @@ import uuid
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models.refresh_token import RefreshToken
-from app.db.models.user import User
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 
 
 class AuthRepository:

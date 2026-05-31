@@ -11,8 +11,8 @@ from app.core.exceptions import (
 )
 from app.core.security import DUMMY_HASH
 from app.core.settings import settings
-from app.db.models.refresh_token import RefreshToken
-from app.db.models.user import User
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 
 
 def test_authenticate_user_returns_user(mocker, mock_auth_repository, auth_service):
