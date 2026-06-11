@@ -34,4 +34,4 @@ class RefreshToken(Base):
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+    user: Mapped["User"] = relationship(back_populates="refresh_tokens")

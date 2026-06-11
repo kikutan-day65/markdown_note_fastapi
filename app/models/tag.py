@@ -6,9 +6,10 @@ from sqlalchemy import DateTime, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.article_tag import article_tags
 
 if TYPE_CHECKING:
-    from app.models.article_tag import ArticleTag
+    from app.models.article import Article
 
 
 class Tag(Base):
@@ -22,6 +23,6 @@ class Tag(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    article_tags: Mapped[list["ArticleTag"]] = relationship(
-        "ArticleTag", back_populates="tag", cascade="all"
+    articles: Mapped[list["Article"]] = relationship(
+        secondary=article_tags, back_populates="tags"
     )
