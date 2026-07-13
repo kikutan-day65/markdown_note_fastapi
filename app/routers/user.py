@@ -1,74 +1,121 @@
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 
-from app.api.deps import CurrentActiveUserDep, CurrentAdminUserDep, UserServiceDep
+from app.api.deps import (
+    ArticleServiceDep,
+    CommentServiceDep,
+    CurrentActiveUserDep,
+    UserServiceDep,
+)
 from app.models.user import User
-from app.schemas.user import UserAdmin, UserCreate, UserMe, UserPublic, UserUpdate
+from app.schemas.article import ArticleSummaryWithoutUser
+from app.schemas.comment import CommentSummaryWithArticle
+from app.schemas.pagination import PaginatedResponse
+from app.schemas.user import UserCreate, UserPrivate, UserPublic, UserUpdate
 
 router = APIRouter(tags=["users"])
 
 
 @router.get(
     "/me",
-    response_model=UserMe,
+    response_model=UserPrivate,
     status_code=status.HTTP_200_OK,
-    name="read_me",
+    name="get_me",
 )
-def read_me(current_user: CurrentActiveUserDep) -> User:
+def get_me(current_user: CurrentActiveUserDep) -> User:
     return current_user
+
+
+@router.patch(
+    "/me",
+    response_model=UserPrivate,
+    status_code=status.HTTP_200_OK,
+    name="update_me",
+)
+def update_me(
+    current_user: CurrentActiveUserDep, service: UserServiceDep, user_data: UserUpdate
+) -> User:
+    return service.update_me(current_user=current_user, user_data=user_data)
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    name="delete_me",
+)
+def delete_me(current_user: CurrentActiveUserDep, service: UserServiceDep) -> None:
+    return service.delete_me(current_user=current_user)
+
+
+@router.get(
+    "/me/articles",
+    response_model=PaginatedResponse[ArticleSummaryWithoutUser],
+    status_code=status.HTTP_200_OK,
+    name="list_my_articles",
+)
+def list_my_articles(
+    current_user: CurrentActiveUserDep,
+    service: ArticleServiceDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+) -> PaginatedResponse[ArticleSummaryWithoutUser]:
+    return service.list_user_articles(
+        page=page, page_size=page_size, user_id=current_user.id
+    )
+
+
+@router.get(
+    "/me/comments",
+    response_model=PaginatedResponse[CommentSummaryWithArticle],
+    status_code=status.HTTP_200_OK,
+    name="list_my_comments",
+)
+def list_my_comments(
+    current_user: CurrentActiveUserDep,
+    service: CommentServiceDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+) -> PaginatedResponse[CommentSummaryWithArticle]:
+    return service.list_user_comments(
+        page=page, page_size=page_size, user_id=current_user.id
+    )
+
+
+# PATCH /me/change-email
+# PATCH /me/change-password
 
 
 @router.post(
     "",
-    response_model=UserPublic,
+    response_model=UserPrivate,
     status_code=status.HTTP_201_CREATED,
     name="create_user",
 )
-def create_user(user: UserCreate, service: UserServiceDep) -> User:
-    return service.create_user(user)
+def create_user(user_data: UserCreate, service: UserServiceDep) -> User:
+    return service.create_user(user_data=user_data)
 
 
 @router.get(
-    "",
-    response_model=list[UserAdmin],
+    "/{user_id}",
+    response_model=UserPublic,
     status_code=status.HTTP_200_OK,
-    name="list_users",
+    name="retrieve_user",
 )
-def list_users(_: CurrentAdminUserDep, service: UserServiceDep) -> list[User]:
-    return service.list_users()
+def retrieve_user(service: UserServiceDep, user_id: uuid.UUID) -> User:
+    return service.retrieve_user(user_id=user_id)
 
 
 @router.get(
-    "/{id}", response_model=UserPublic, status_code=status.HTTP_200_OK, name="get_user"
-)
-def get_user(id: uuid.UUID, service: UserServiceDep) -> User:
-    return service.retrieve_user(id)
-
-
-@router.patch(
-    "/{id}",
-    response_model=UserAdmin,
+    "/{user_id}/articles",
+    response_model=PaginatedResponse[ArticleSummaryWithoutUser],
     status_code=status.HTTP_200_OK,
-    name="update_user",
+    name="list_user_articles",
 )
-def update_user(
-    id: uuid.UUID,
-    user: UserUpdate,
-    current_user: CurrentActiveUserDep,
-    service: UserServiceDep,
-) -> User:
-    return service.update_user(id, user, current_user)
-
-
-@router.delete(
-    "/{id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    name="delete_user",
-)
-def delete_user(
-    id: uuid.UUID,
-    current_user: CurrentActiveUserDep,
-    service: UserServiceDep,
-) -> None:
-    service.delete_user(id, current_user)
+def list_user_articles(
+    service: ArticleServiceDep,
+    user_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+) -> PaginatedResponse[ArticleSummaryWithoutUser]:
+    return service.list_user_articles(page=page, page_size=page_size, user_id=user_id)
