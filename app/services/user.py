@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timezone
 
 from app.core.exceptions import (
-    PermissionDeniedException,
     UserAlreadyExistsException,
     UserNotFoundException,
 )
@@ -17,77 +16,52 @@ class UserService:
         self.repository = repository
 
     def create_user(self, user_data: UserCreate) -> User:
-        # Unique constraint violation check
-        existing_user = self.repository.get_by_username_or_email(
-            username=user_data.username, email=user_data.email
-        )
-
-        if existing_user:
+        # Is username unique in db?
+        if self.repository.get_user_by_username(username=user_data.username):
             raise UserAlreadyExistsException()
 
-        user_in = User(
+        # Is email unique in db?
+        if self.repository.get_user_by_email(email=user_data.email):
+            raise UserAlreadyExistsException()
+
+        new_user = User(
             username=user_data.username,
             email=user_data.email,
             password_hash=get_password_hash(user_data.password),
             avatar_url=user_data.avatar_url,
         )
 
-        return self.repository.save(user_in)
-
-    def list_users(self) -> list[User]:
-        return self.repository.get_all()
+        return self.repository.save(new_user)
 
     def retrieve_user(self, user_id: uuid.UUID) -> User:
-        target = self.repository.get_by_id(user_id)
+        user = self.repository.get_user_by_id(user_id=user_id)
 
-        if not target:
+        if not user:
             raise UserNotFoundException()
 
-        return target
+        return user
 
-    def update_user(
-        self, user_id: uuid.UUID, user_data: UserUpdate, current_user: User
-    ) -> User:
-        target = self.repository.get_by_id(user_id)
+    def update_me(self, current_user: User, user_data: UserUpdate) -> User:
+        if user_data.username:
+            existing_user = self.repository.get_user_by_username(
+                username=user_data.username
+            )
 
-        if not target:
-            raise UserNotFoundException()
-
-        is_admin = current_user.is_admin
-        is_owner = current_user.id == target.id
-
-        if not is_admin and not is_owner:
-            raise PermissionDeniedException()
+            if existing_user and existing_user.id != current_user.id:
+                raise UserAlreadyExistsException()
 
         update_data = user_data.model_dump(exclude_unset=True)
 
-        # Unique constraint violation check
-        if "username" in update_data:
-            existing_user = self.repository.get_by_username(
-                username=update_data["username"]
-            )
-
-            if existing_user and existing_user.id != target.id:
-                raise UserAlreadyExistsException()
-
         for field, value in update_data.items():
-            setattr(target, field, value)
+            setattr(current_user, field, value)
 
-        updated_user = self.repository.save(target)
+        return self.repository.save(current_user)
 
-        return updated_user
+    def delete_me(self, current_user: User) -> None:
+        now = datetime.now(tz=timezone.utc)
 
-    def delete_user(self, user_id: uuid.UUID, current_user: User) -> None:
-        target = self.repository.get_by_id(user_id)
+        current_user.deleted_at = now
+        self.repository.save(current_user)
 
-        if not target:
-            raise UserNotFoundException()
-
-        is_admin = current_user.is_admin
-        is_owner = current_user.id == target.id
-
-        if not is_admin and not is_owner:
-            raise PermissionDeniedException()
-
-        target.deleted_at = datetime.now(tz=timezone.utc)
-        self.repository.save(target)
+        # refresh token, article, like, commentを
+        # 論理削除する必要がある。

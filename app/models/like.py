@@ -31,5 +31,5 @@ class Like(Base):
         Uuid(as_uuid=True), ForeignKey("articles.id"), nullable=False
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="likes")
-    article: Mapped["Article"] = relationship("Article", back_populates="likes")
+    user: Mapped["User"] = relationship(back_populates="likes")
+    article: Mapped["Article"] = relationship(back_populates="likes")

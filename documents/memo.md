@@ -62,3 +62,7 @@ if "username" in update_data:
 if existing_user and existing_user.id != target.id:
     raise UserAlreadyExistsException()
 ```
+
+## Paginationの参考
+
+[How to Implement Pagination in FastAPI](https://oneuptime.com/blog/post/2026-02-02-fastapi-pagination/view)

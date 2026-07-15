@@ -38,5 +38,5 @@ class Comment(Base):
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="comments")
-    article: Mapped["Article"] = relationship("Article", back_populates="comments")
+    article: Mapped["Article"] = relationship(back_populates="comments")
+    user: Mapped["User"] = relationship(back_populates="comments")

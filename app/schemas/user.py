@@ -20,7 +20,8 @@ class UserUpdate(BaseModel):
 
 
 class UserChangeEmail(BaseModel):
-    email: EmailStr
+    old_email: EmailStr
+    new_email: EmailStr
 
 
 class UserChangePassword(BaseModel):
@@ -29,6 +30,15 @@ class UserChangePassword(BaseModel):
 
 
 # ===== RESPONSE =====
+class UserPrivate(ORMBase):
+    id: uuid.UUID
+    username: str
+    email: EmailStr
+    avatar_url: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
 class UserPublic(ORMBase):
     id: uuid.UUID
     username: str
@@ -37,24 +47,6 @@ class UserPublic(ORMBase):
     updated_at: datetime
 
 
-class UserAdmin(ORMBase):
+class UserSummary(ORMBase):
     id: uuid.UUID
     username: str
-    email: EmailStr
-    is_admin: bool
-    is_active: bool
-    is_verified: bool
-    avatar_url: str | None
-    created_at: datetime
-    updated_at: datetime
-    deleted_at: datetime | None
-    last_login: datetime | None
-
-
-class UserMe(ORMBase):
-    id: uuid.UUID
-    username: str
-    email: EmailStr
-    avatar_url: str | None
-    created_at: datetime
-    updated_at: datetime

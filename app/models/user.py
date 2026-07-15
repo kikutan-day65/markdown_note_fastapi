@@ -44,16 +44,12 @@ class User(Base):
     )
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
-        "RefreshToken",
-        back_populates="user",
-        cascade="all",
+        back_populates="user", cascade="all, delete-orphan"
     )
     articles: Mapped[list["Article"]] = relationship(
-        "Article", back_populates="user", cascade="all"
+        back_populates="user", cascade="all, delete-orphan"
     )
+    comments: Mapped[list["Comment"]] = relationship(back_populates="user")
     likes: Mapped[list["Like"]] = relationship(
-        "Like", back_populates="user", cascade="all"
-    )
-    comments: Mapped[list["Comment"]] = relationship(
-        "Comment", back_populates="user", cascade="all"
+        back_populates="user", cascade="all, delete-orphan"
     )

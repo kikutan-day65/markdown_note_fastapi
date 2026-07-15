@@ -23,7 +23,7 @@ class AuthService:
         self.repository = repository
 
     def login(self, form_data: OAuth2PasswordRequestForm) -> Token:
-        identifier = form_data.username  # put username/email to identifier
+        identifier = form_data.username
 
         user = self.authenticate_user(identifier, form_data.password)
 

@@ -39,7 +39,7 @@ class UserNotFoundException(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found.",
+            detail="User not found",
         )
 
 
@@ -54,6 +54,54 @@ class TokenReuseException(HTTPException):
 class UserAlreadyExistsException(HTTPException):
     def __init__(self):
         super().__init__(
-            status_code=409,
-            detail="User already exists.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already exists",
+        )
+
+
+class TagNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tag not found",
+        )
+
+
+class ArticleNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Article not found",
+        )
+
+
+class ArticleAlreadyLikedException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already liked this article",
+        )
+
+
+class CannotLikeOwnArticleException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot like your own article",
+        )
+
+
+class LikeNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You have not liked this article yet",
+        )
+
+
+class CommentNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found",
         )
