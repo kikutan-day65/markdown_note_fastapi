@@ -1,22 +1,12 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 from app.models.like import Like
+from app.repositories.base import BaseRepository
 
 
-class LikeRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def save(self, like: Like) -> Like:
-        self.db.add(like)
-        self.db.commit()
-        self.db.refresh(like)
-
-        return like
-
+class LikeRepository(BaseRepository):
     def get_like_by_user_id_and_article_id(
         self, user_id: uuid.UUID, article_id: uuid.UUID
     ) -> Like | None:
@@ -28,7 +18,6 @@ class LikeRepository:
 
     def delete_like(self, like: Like) -> None:
         self.db.delete(like)
-        self.db.commit()
 
     def count_likes_by_article_id(self, article_id: uuid.UUID) -> int:
         stmt = (

@@ -1,22 +1,13 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.models.article import Article
+from app.repositories.base import BaseRepository
 
 
-class ArticleRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def save(self, article: Article) -> Article:
-        self.db.add(article)
-        self.db.commit()
-        self.db.refresh(article)
-
-        return article
-
+class ArticleRepository(BaseRepository):
     def count_articles(self) -> int:
         stmt = (
             select(func.count())

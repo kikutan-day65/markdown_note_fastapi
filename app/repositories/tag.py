@@ -1,15 +1,12 @@
 import uuid
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from app.models.tag import Tag
+from app.repositories.base import BaseRepository
 
 
-class TagRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
+class TagRepository(BaseRepository):
     def get_tags_by_ids(self, ids: set[uuid.UUID]) -> list[Tag]:
         stmt = select(Tag).where(Tag.id.in_(ids))
 

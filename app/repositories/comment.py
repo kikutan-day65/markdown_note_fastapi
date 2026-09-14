@@ -1,22 +1,13 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.models.comment import Comment
+from app.repositories.base import BaseRepository
 
 
-class CommentRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def save(self, comment: Comment) -> Comment:
-        self.db.add(comment)
-        self.db.commit()
-        self.db.refresh(comment)
-
-        return comment
-
+class CommentRepository(BaseRepository):
     def count_article_comments(self, article_id: uuid.UUID) -> int:
         stmt = (
             select(func.count())

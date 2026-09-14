@@ -1,16 +1,13 @@
 import uuid
 
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
 
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.repositories.base import BaseRepository
 
 
-class AuthRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
+class AuthRepository(BaseRepository):
     def get_user_by_identifier(self, identifier: str) -> User | None:
         stmt = select(User).where(
             or_(
@@ -29,11 +26,6 @@ class AuthRepository:
         )
 
         return self.db.scalar(stmt)
-
-    def save_refresh_token(self, token: RefreshToken) -> None:
-        self.db.add(token)
-        self.db.commit()
-        self.db.refresh(token)
 
     def get_refresh_token_by_jti(self, jti: uuid.UUID) -> RefreshToken | None:
         stmt = select(RefreshToken).where(RefreshToken.jti == jti)

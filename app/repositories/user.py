@@ -1,22 +1,12 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.repositories.base import BaseRepository
 
 
-class UserRepository:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def save(self, user: User) -> User:
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
-
-        return user
-
+class UserRepository(BaseRepository):
     def get_user_by_username(self, username: str) -> User | None:
         stmt = select(User).where(
             User.username == username,
