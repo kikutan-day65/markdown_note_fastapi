@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from math import ceil
 
+from app.core.decorator import transactional
 from app.core.exceptions import (
     ArticleNotFoundException,
     CommentNotFoundException,
@@ -12,6 +13,7 @@ from app.models.comment import Comment
 from app.models.user import User
 from app.repositories.article import ArticleRepository
 from app.repositories.comment import CommentRepository
+from app.repositories.user import UserRepository
 from app.schemas.comment import (
     CommentCreate,
     CommentSummaryWithArticle,
@@ -24,12 +26,15 @@ from app.schemas.pagination import PaginatedResponse
 class CommentService:
     def __init__(
         self,
+        user_repository: UserRepository,
         comment_repository: CommentRepository,
         article_repository: ArticleRepository,
     ):
         self.comment_repository = comment_repository
         self.article_repository = article_repository
+        self.user_repository = user_repository
 
+    @transactional
     def create_comment(
         self, user: User, article_id: uuid.UUID, comment_data: CommentCreate
     ) -> Comment:
@@ -42,7 +47,11 @@ class CommentService:
             body=comment_data.body, user_id=user.id, article_id=article_id
         )
 
-        return self.comment_repository.save(comment)
+        self.comment_repository.add(comment)
+        self.comment_repository.flush()
+        self.comment_repository.refresh(comment)
+
+        return comment
 
     def list_article_comments(
         self, page: int, page_size: int, article_id: uuid.UUID
@@ -78,6 +87,7 @@ class CommentService:
 
         return comment
 
+    @transactional
     def update_comment(
         self, user: User, comment_id: uuid.UUID, comment_data: CommentUpdate
     ) -> Comment:
@@ -91,8 +101,12 @@ class CommentService:
 
         comment.body = comment_data.body
 
-        return self.comment_repository.save(comment)
+        self.comment_repository.flush()
+        self.comment_repository.refresh(comment)
 
+        return comment
+
+    @transactional
     def delete_comment(self, user: User, comment_id: uuid.UUID) -> None:
         comment = self.comment_repository.get_comment_by_id(comment_id=comment_id)
 
@@ -103,8 +117,6 @@ class CommentService:
             raise PermissionDeniedException()
 
         comment.deleted_at = datetime.now(tz=timezone.utc)
-
-        self.comment_repository.save(comment)
 
     def list_user_comments(
         self, page: int, page_size: int, user_id: uuid.UUID

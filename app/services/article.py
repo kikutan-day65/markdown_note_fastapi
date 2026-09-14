@@ -2,12 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from math import ceil
 
+from app.core.decorator import transactional
 from app.core.exceptions import (
     ArticleNotFoundException,
     PermissionDeniedException,
     TagNotFoundException,
     UserNotFoundException,
 )
+from app.core.unit_of_work import UnitOfWork
 from app.models.article import Article
 from app.models.user import User
 from app.repositories.article import ArticleRepository
@@ -30,12 +32,15 @@ class ArticleService:
         tag_repository: TagRepository,
         user_repository: UserRepository,
         like_repository: LikeRepository,
+        uow: UnitOfWork,
     ):
         self.article_repository = article_repository
         self.tag_repository = tag_repository
         self.user_repository = user_repository
         self.like_repository = like_repository
+        self.uow = uow
 
+    @transactional
     def create_article(
         self, current_user: User, article_data: ArticleCreate
     ) -> Article:
@@ -53,7 +58,11 @@ class ArticleService:
 
         article.tags = tags
 
-        return self.article_repository.save(article)
+        self.article_repository.add(article)
+        self.article_repository.flush()
+        self.article_repository.refresh(article)
+
+        return article
 
     def list_articles(
         self, page: int, page_size: int
@@ -97,6 +106,7 @@ class ArticleService:
 
         return article
 
+    @transactional
     def update_article(
         self, article_id: uuid.UUID, user: User, article_data: ArticleUpdate
     ) -> Article:
@@ -124,8 +134,12 @@ class ArticleService:
 
             article.tags = tags
 
-        return self.article_repository.save(article)
+        self.article_repository.flush()
+        self.article_repository.refresh(article)
 
+        return article
+
+    @transactional
     def delete_article(self, user: User, article_id: uuid.UUID) -> None:
         article = self.article_repository.get_article_by_id(article_id=article_id)
 
@@ -136,8 +150,6 @@ class ArticleService:
             raise PermissionDeniedException()
 
         article.deleted_at = datetime.now(tz=timezone.utc)
-
-        self.article_repository.save(article)
 
         # commentは論理削除しなくてもよい？
         # なぜならば、commentは記事作成者以外がしているので

@@ -5,6 +5,7 @@ import jwt
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
 
+from app.core.decorator import transactional
 from app.core.exceptions import (
     AuthenticationException,
     CredentialException,
@@ -12,6 +13,7 @@ from app.core.exceptions import (
 )
 from app.core.security import DUMMY_HASH, get_password_hash, verify_password
 from app.core.settings import settings
+from app.core.unit_of_work import UnitOfWork
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.auth import AuthRepository
@@ -19,10 +21,13 @@ from app.schemas.auth import Token
 
 
 class AuthService:
-    def __init__(self, repository: AuthRepository):
-        self.repository = repository
+    def __init__(self, auth_repository: AuthRepository, uow: UnitOfWork):
+        self.auth_repository = auth_repository
+        self.uow = uow
 
+    @transactional
     def login(self, form_data: OAuth2PasswordRequestForm) -> Token:
+
         identifier = form_data.username
 
         user = self.authenticate_user(identifier, form_data.password)
@@ -34,59 +39,78 @@ class AuthService:
         access_token, _, _ = self.create_token(data=data, token_kind="access")
         refresh_token, expire, jti = self.create_token(data=data, token_kind="refresh")
 
-        self.save_refresh_token(
+        self.add_refresh_token(
             user_id=user.id,
             token=refresh_token,
             expire=expire,
             jti=jti,
         )
 
+        now = datetime.now(tz=timezone.utc)
+        user.last_login = now
+
         return Token(
-            access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
         )
 
+    @transactional
     def logout(self, token: str) -> None:
+        # Get user_id and jti from input refresh token
         user_id, jti = self.decode_refresh_token(token=token)
 
-        user = self.repository.get_user_by_id(user_id)
+        # Get user obj with user_id
+        user = self.auth_repository.get_user_by_id(user_id)
         if not user:
             raise CredentialException()
 
-        target = self.repository.get_refresh_token_by_jti(jti=jti)
+        # Get revoke-target refresh token with jti
+        target = self.auth_repository.get_refresh_token_by_jti(jti=jti)
         if not target:
             raise CredentialException()
 
+        # Check if input refresh token equals revoked-target refresh token
         if not verify_password(token, target.token):
             raise CredentialException()
 
+        # Revoke target refresh token
         self.revoke_refresh_token(target=target)
 
+    @transactional
     def refresh(self, token: str) -> Token:
+        # Get user_id and jti from input refresh token
         user_id, jti = self.decode_refresh_token(token=token)
 
-        user = self.repository.get_user_by_id(user_id)
+        # Get user object with user_id
+        user = self.auth_repository.get_user_by_id(user_id)
         if not user:
             raise CredentialException()
 
-        target = self.repository.get_refresh_token_by_jti(jti=jti)
+        # Get revoke-target refresh token with jti
+        target = self.auth_repository.get_refresh_token_by_jti(jti=jti)
         if not target:
             raise CredentialException()
 
+        # Check if input refresh token equals revoked-target token
         if not verify_password(token, target.token):
             raise CredentialException()
 
+        # Check if revoked-target refresh token is NOT already revoked
         if target.revoked_at is not None:
             raise TokenReuseException()
 
+        # Revoke target refresh token
         self.revoke_refresh_token(target=target)
 
+        # Generate new access/refresh token
         data = {"sub": str(user.id)}
         new_access_token, _, _ = self.create_token(data=data, token_kind="access")
         new_refresh_token, expire, jti = self.create_token(
             data=data, token_kind="refresh"
         )
 
-        self.save_refresh_token(
+        self.add_refresh_token(
             user_id=user.id,
             token=new_refresh_token,
             expire=expire,
@@ -103,7 +127,7 @@ class AuthService:
         if not identifier or not password:
             return None
 
-        target = self.repository.get_user_by_identifier(identifier)
+        target = self.auth_repository.get_user_by_identifier(identifier)
 
         if not target:
             verify_password(password, DUMMY_HASH)  # To Avoid timing-attack
@@ -178,7 +202,7 @@ class AuthService:
 
         return user_id, jti
 
-    def save_refresh_token(
+    def add_refresh_token(
         self, user_id: uuid.UUID, token: str, expire: datetime, jti: uuid.UUID
     ) -> None:
         data = RefreshToken(
@@ -187,11 +211,9 @@ class AuthService:
             expires_at=expire,
             jti=jti,
         )
-        self.repository.save_refresh_token(data)
+
+        self.auth_repository.add(data)
 
     def revoke_refresh_token(self, target: RefreshToken) -> None:
         now = datetime.now(tz=timezone.utc)
         target.revoked_at = now
-
-        # Update old refresh token -> revoked_at is set
-        self.repository.save_refresh_token(target)
