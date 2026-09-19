@@ -12,6 +12,7 @@ from app.core.exceptions import (
     InactiveUserException,
 )
 from app.core.settings import settings
+from app.core.unit_of_work import UnitOfWork
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.repositories.article import ArticleRepository
@@ -41,6 +42,13 @@ def get_db():
 
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
+
+
+def get_unit_of_work(db: DatabaseSession) -> UnitOfWork:
+    return UnitOfWork(db=db)
+
+
+UnitOfWorkDep = Annotated[UnitOfWork, Depends(get_unit_of_work)]
 
 
 # ===============================================
@@ -91,8 +99,16 @@ AuthRepositoryDep = Annotated[AuthRepository, Depends(get_auth_repository)]
 # ===============================================
 # Service
 # ===============================================
-def get_user_service(repository: UserRepositoryDep) -> UserService:
-    return UserService(repository)
+def get_user_service(
+    user_repository: UserRepositoryDep,
+    like_repository: LikeRepositoryDep,
+    uow: UnitOfWorkDep,
+) -> UserService:
+    return UserService(
+        user_repository=user_repository,
+        like_repository=like_repository,
+        uow=uow,
+    )
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
@@ -103,12 +119,14 @@ def get_article_service(
     tag_repository: TagRepositoryDep,
     user_repository: UserRepositoryDep,
     like_repository: LikeRepositoryDep,
+    uow: UnitOfWorkDep,
 ) -> ArticleService:
     return ArticleService(
         article_repository=article_repository,
         tag_repository=tag_repository,
         user_repository=user_repository,
         like_repository=like_repository,
+        uow=uow,
     )
 
 
@@ -116,10 +134,12 @@ ArticleServiceDep = Annotated[ArticleService, Depends(get_article_service)]
 
 
 def get_comment_service(
+    user_repository: UserRepositoryDep,
     comment_repository: CommentRepositoryDep,
     article_repository: ArticleRepositoryDep,
 ) -> CommentService:
     return CommentService(
+        user_repository=user_repository,
         comment_repository=comment_repository,
         article_repository=article_repository,
     )
@@ -128,8 +148,8 @@ def get_comment_service(
 CommentServiceDep = Annotated[CommentService, Depends(get_comment_service)]
 
 
-def get_tag_service(repository: TagRepositoryDep) -> TagService:
-    return TagService(repository)
+def get_tag_service(tag_repository: TagRepositoryDep) -> TagService:
+    return TagService(tag_repository=tag_repository)
 
 
 TagServiceDep = Annotated[TagService, Depends(get_tag_service)]
@@ -138,18 +158,22 @@ TagServiceDep = Annotated[TagService, Depends(get_tag_service)]
 def get_like_service(
     like_repository: LikeRepositoryDep,
     article_repository: ArticleRepositoryDep,
+    uow: UnitOfWorkDep,
 ) -> LikeService:
     return LikeService(
         like_repository=like_repository,
         article_repository=article_repository,
+        uow=uow,
     )
 
 
 LikeServiceDep = Annotated[LikeService, Depends(get_like_service)]
 
 
-def get_auth_service(repository: AuthRepositoryDep) -> AuthService:
-    return AuthService(repository)
+def get_auth_service(
+    auth_repository: AuthRepositoryDep, uow: UnitOfWorkDep
+) -> AuthService:
+    return AuthService(auth_repository=auth_repository, uow=uow)
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
