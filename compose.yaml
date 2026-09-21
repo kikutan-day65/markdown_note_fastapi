@@ -33,11 +33,19 @@ services:
     env_file:
       - .env.db
 
+    volumes:
+      - markdown-note-dev:/var/lib/postgresql/data
+
   test-db:
     image: postgres:16
 
     env_file:
       - .env.test-db
 
+    volumes:
+      - markdown-note-test:/var/lib/postgresql/data
+
 volumes:
   markdown-note-venv:
+  markdown-note-dev:
+  markdown-note-test:
