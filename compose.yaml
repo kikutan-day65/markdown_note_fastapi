@@ -24,8 +24,8 @@ services:
       - .:/app
       - markdown-note-venv:/app/.venv
 
-    command: >
-      sh -c "uv sync && uv run --no-sync pytest"
+    entrypoint: >
+      sh -c "uv sync && uv run --no-sync pytest \"$@\"" --
 
   db:
     image: postgres:16
