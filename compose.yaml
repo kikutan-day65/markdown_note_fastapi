@@ -1,0 +1,49 @@
+services:
+  api:
+    image: markdown-note-fastapi
+
+    env_file:
+      - .env
+
+    depends_on:
+      - db
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - .:/app
+      - markdown-note-venv:/app/.venv
+
+    command: >
+      sh -c "uv sync && uv run --no-sync uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+  test:
+    image: markdown-note-fastapi
+
+    env_file:
+      - .env.test
+
+    depends_on:
+      - db
+
+    volumes:
+      - .:/app
+      - markdown-note-venv:/app/.venv
+
+    entrypoint: >
+      sh -c "uv sync && uv run --no-sync pytest \"$@\"" --
+
+  db:
+    image: postgres:16
+
+    env_file:
+      - .env.db
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres:/utils
+
+volumes:
+  markdown-note-venv:
+  postgres-data:

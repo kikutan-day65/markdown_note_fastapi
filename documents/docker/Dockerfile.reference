@@ -1,0 +1,35 @@
+# Base image
+FROM base_image
+
+# Set the working directory inside the image/container
+WORKDIR /app
+
+# Set environment variables
+ENV ENV_NAME=value
+
+# Copy files/directories from host into the image
+# COPY <source> <destination>
+COPY source destination
+
+# Copy files from another image/build stage
+COPY --from=other_image source destination
+
+# Run a command while building the image
+RUN command_here
+
+# Document the port used by the application
+# This does NOT publish the port to the host
+EXPOSE 8000
+
+# Default command executed when the container starts
+CMD ["command", "arg1", "arg2"]
+
+# Define the container entrypoint
+# Arguments passed to `docker run` are appended to ENTRYPOINT
+ENTRYPOINT ["command"]
+
+# Declare a mount point for persistent/external data
+VOLUME ["/path/to/data"]
+
+# Change the user used for subsequent instructions/container execution
+USER username

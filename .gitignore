@@ -7,6 +7,8 @@ ENV/
 env/
 .env
 .env.test
+.env.db
+.env.test-db
 .vscode/
 .idea/
 .DS_Store
