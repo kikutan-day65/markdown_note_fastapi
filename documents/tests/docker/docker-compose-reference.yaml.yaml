@@ -1,0 +1,72 @@
+services:
+  service_name:
+    # Image used to create the container
+    image: service_image
+
+    # Build an image from a Dockerfile
+    # Use this when you want Compose to build the image
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Environment variables loaded from a file
+    env_file:
+      - path/to/.env
+
+    # Environment variables written directly in compose.yaml
+    environment:
+      ENV_NAME: value
+
+    # Map host port to container port
+    # <host_port>:<container_port>
+    ports:
+      - "8000:8000"
+
+    # Mount files/directories/volumes into the container
+    # <host_path_or_volume>:<container_path>
+    volumes:
+      - .:/app
+      - volume_name:/app/.venv
+
+    # Set the working directory inside the container
+    working_dir: /app
+
+    # Command executed when the container starts
+    command: >
+      sh -c "command_here"
+
+    # Main executable / entrypoint of the container
+    # Useful when arguments passed by `docker compose run`
+    # should be received with "$@"
+    entrypoint: >
+      sh -c "command_here \"$@\"" --
+
+    # Start this service after specified services
+    # Note: this only controls startup order by default
+    depends_on:
+      - db
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check for the container
+    healthcheck:
+      test: ["CMD", "command_here"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Override the container hostname
+    hostname: custom-hostname
+
+    # Connect this service to networks
+    networks:
+      - app-network
+
+# Named volumes managed by Docker Compose
+volumes:
+  volume_name:
+
+# Networks used by services
+networks:
+  app-network:
