@@ -1,22 +1,6 @@
-import os
-from pathlib import Path
-
-# Ensure tests are running with .test.env
-TARGET_ENV_FILE = os.getenv("ENV_FILE")
-
-if TARGET_ENV_FILE != ".env.test":
-    raise RuntimeError(
-        f"Tests must run with ENV_FILE=.env.test, but got {TARGET_ENV_FILE!r}"
-    )
-
-# Ensure .env.test exists
-if not Path(TARGET_ENV_FILE).exists():
-    raise RuntimeError(f"Test env file does not exist: {TARGET_ENV_FILE}")
-
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.engine import make_url
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.api.deps import get_db
@@ -24,15 +8,20 @@ from app.core.settings import settings
 from app.db.base import Base
 from app.main import app
 
-# Ensure DATABASE_URL points to a test db
-url = make_url(settings.DATABASE_URL)
-if url.database is None or "test" not in url.database:
-    raise RuntimeError(
-        f"Refusing to run tests against non-test database: {url.database!r}"
-    )
+if not "test" in settings.DB_NAME:
+    raise RuntimeError(f"Test database is required, got: {settings.DB_NAME}")
+
+db_url = URL.create(
+    drivername=settings.DB_DRIVERNAME,
+    username=settings.DB_USERNAME,
+    password=settings.DB_PASSWORD,
+    host=settings.DB_HOST,
+    port=settings.DB_PORT,
+    database=settings.DB_NAME,
+)
 
 # Prepare test db
-test_engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+test_engine = create_engine(db_url, pool_pre_ping=True)
 SessionTestLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
 
